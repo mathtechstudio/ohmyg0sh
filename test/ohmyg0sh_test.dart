@@ -10,6 +10,7 @@
 /// These tests rely on config/regexes.json to exist for most cases.
 /// Pattern-specific tests are skipped if the named pattern is absent.
 library;
+
 import 'dart:io';
 import 'dart:convert';
 import 'package:test/test.dart';

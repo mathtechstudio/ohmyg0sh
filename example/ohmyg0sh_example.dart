@@ -10,6 +10,7 @@
 /// Tip:
 /// Un-comment pattern/notKeyHacks/jadx options below to customize behavior.
 library;
+
 import 'dart:io';
 import 'package:ohmyg0sh/ohmyg0sh.dart';
 
