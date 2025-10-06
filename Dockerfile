@@ -7,7 +7,7 @@ LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
 
 # Install Java 21 JRE (runtime only, not full JDK)
 RUN apt-get update && \
-    apt-get install -y openjdk-21-jre-headless && \
+    apt-get install -y openjdk-21-jre && \
     apt-get install -y unzip && \
     rm -rf /var/lib/apt/lists/*
 
@@ -45,7 +45,7 @@ FROM debian:bookworm-slim
 
 # Install minimal runtime (JRE only)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jre-headless \
+    openjdk-21-jre \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy jadx binaries
