@@ -9,3 +9,5 @@ pubspec.lock
 app-release.apk
 
 results.json
+
+.dockerignore
