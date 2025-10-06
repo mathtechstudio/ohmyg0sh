@@ -22,6 +22,7 @@
 ///   2  Failure during setup/run (e.g., missing JADX)
 ///  64  Invalid CLI usage/arguments
 library;
+
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:ohmyg0sh/ohmyg0sh.dart';
