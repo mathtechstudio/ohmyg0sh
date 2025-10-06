@@ -1,4 +1,4 @@
-# ohmyg0sh
+# ohmyg0.sh
 
 APK security scanner that detects hardcoded API keys and credentials before they reach production. Decompiles APKs with jadx and scans for exposed secrets using configurable regex patterns.
 
