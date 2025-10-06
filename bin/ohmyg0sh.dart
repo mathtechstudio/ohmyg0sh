@@ -1,10 +1,37 @@
-// bin/ohmyg0sh.dart
+/// OhMyG0sh CLI entrypoint.
+///
+/// Provides a command-line interface to scan Android APKs for hardcoded secrets.
+///
+/// Usage:
+///   ohmyg0sh -f <apk> [options]
+///
+/// Flags:
+///   -h, --help          Show help and usage
+///   -v, --version       Show version banner
+///       --no-banner     Hide ASCII banner on startup
+///   -f, --file         Path to the target APK (or pass as positional arg)
+///   -o, --output       Output file path (random name if not set)
+///   -p, --pattern      Path to custom regexes.json
+///   -a, --args         Extra arguments forwarded to JADX
+///       --jadx         Path to jadx binary
+///       --json         Save report as JSON (otherwise plaintext)
+///   -n, --notkeys      Path to notkeyhacks.json filters
+///
+/// Exit codes:
+///   0  Success
+///   2  Failure during setup/run (e.g., missing JADX)
+///  64  Invalid CLI usage/arguments
+library;
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:ohmyg0sh/ohmyg0sh.dart';
 import 'package:ohmyg0sh/src/cli_header.dart';
 import 'package:ohmyg0sh/src/version.dart';
 
+/// Locate a command in PATH using platform-specific resolver.
+///
+/// On Windows uses 'where', on Unix-like systems uses 'which'.
+/// Returns the first resolved path or null if not found.
 Future<String?> _whichCmd(String cmd) async {
   try {
     final result = await Process.run(
@@ -20,6 +47,10 @@ Future<String?> _whichCmd(String cmd) async {
   return null;
 }
 
+/// Ensure JADX is available. If a custom path is provided and exists, returns.
+/// Otherwise checks PATH; if missing, prompts for installation.
+/// On macOS/Linux, attempts Homebrew install when available.
+/// On failure or user decline, prints instructions and terminates with exit(2).
 Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
   // If user provided a path, accept it if exists
   if (customJadxPath != null && customJadxPath.isNotEmpty) {
@@ -78,6 +109,16 @@ Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
   exit(2);
 }
 
+/// Program entrypoint for the OhMyG0sh CLI.
+///
+/// Parses CLI arguments, renders the version/banner, resolves configuration,
+/// verifies/installs JADX if necessary, and runs the scan workflow.
+/// Produces a JSON or text report depending on --json flag.
+///
+/// This function may terminate the process with exit codes:
+/// - 0 on success (when showing version/help)
+/// - 64 for invalid arguments
+/// - 2 for runtime failures
 Future<void> main(List<String> argv) async {
   final parser = ArgParser()
     ..addFlag('help', abbr: 'h', help: 'Show help', negatable: false)
@@ -161,7 +202,7 @@ Future<void> main(List<String> argv) async {
     patternPath: pattern,
     notKeyHacksPath: notkeys,
     jadxPath: customJadx,
-    // continueOnJadxError defaults to true in core
+    // continueOnJadxError defaults to true in _base
   );
 
   try {
