@@ -1,5 +1,5 @@
 name: ohmyg0sh
-description: .apk security scanner that detects hardcoded API keys and credentials before they reach production.
+description: APK security scanner that detects hardcoded API keys and credentials before they reach production.
 version: 1.69.777
 repository: https://github.com/mathtechstudio/ohmyg0sh
 issue_tracker: https://github.com/mathtechstudio/ohmyg0sh/issues
@@ -27,5 +27,6 @@ flutter:
     - config/regexes.json
     - config/notkeyhacks.json
 
+# CLI executable - users can run 'ohmyg0sh' after pub global activate
 executables:
-  ohmyg0sh: ohmyg0sh
+  ohmyg0sh:
