@@ -6,12 +6,10 @@ LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
       repository="https://github.com/mathtechstudio/ohmyg0sh.git"
 
 # Install Java 17 JRE (runtime only, not full JDK)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
-    curl \
-    unzip \
-    ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jre-headless && \
+    apt-get install -y unzip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install jadx 1.5.3
 ENV JADX_VERSION=1.5.3
