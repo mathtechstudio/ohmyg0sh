@@ -10,9 +10,22 @@ import 'package:path/path.dart' as p;
 /// final results = await scanner.scanFile('example.txt');
 /// print(results);
 /// ```
+/// Regex-based scanner utility that loads patterns from a JSON file
+/// and scans text files or directory contents for potential secrets.
+///
+/// Patterns are defined as a map of identifiers to regex strings.
 class RegexScanner {
+  /// Loaded regex patterns mapping identifier to pattern string.
   late final Map<String, String> _patterns;
 
+  /// Create a new RegexScanner.
+  ///
+  /// Parameters:
+  /// - [regexFile] Optional path to the patterns JSON. Defaults to
+  ///   "config/regexes.json".
+  ///
+  /// Throws:
+  /// - [Exception] if the patterns file is not found.
   RegexScanner({String? regexFile}) {
     final path = regexFile ?? p.join('config', 'regexes.json');
     final file = File(path);
@@ -53,6 +66,14 @@ class RegexScanner {
     return result;
   }
 
+  /// Internal: scan raw [content] against all configured patterns.
+  ///
+  /// Returns:
+  /// - Map keyed by pattern name with unique match strings.
+  ///
+  /// Notes:
+  /// - Tries case-sensitive first, then falls back to case-insensitive
+  ///   when a pattern fails to compile.
   Map<String, List<String>> _scanContent(String content) {
     final results = <String, List<String>>{};
     for (final entry in _patterns.entries) {
