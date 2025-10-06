@@ -4,7 +4,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-/// Core class untuk OhMyG0sh
+  /// OhMyG0sh core engine.
+  ///
+  /// Decompiles APKs and scans source artifacts for hardcoded secrets and
+  /// endpoints. The typical workflow is:
+  /// 1) integrityCheck()
+  /// 2) decompile()
+  /// 3) scanning()
+  /// 4) generateReport()
+  /// 5) cleanup()
+  ///
+  /// Instances retain temporary state (e.g., package name and aggregated
+  /// results) for the duration of a run. A temporary directory is created per
+  /// run and removed by [cleanup].
 class OhMyG0sh {
   final String apkPath;
   final bool outputJson;
@@ -19,6 +31,18 @@ class OhMyG0sh {
   Map<String, dynamic>? _patterns;
   Map<String, dynamic>? _notkeyhacks;
 
+ /// Create a new scanner instance.
+ ///
+ /// Required:
+ /// - [apkPath] Path to the target APK to analyze.
+ ///
+ /// Optional:
+ /// - [outputJson] Write report as JSON (default: true). When false, writes plaintext.
+ /// - [outputFile] Destination report path. If null, a default name is used.
+ /// - [patternPath] Path to regex patterns JSON. If null, default resolution is used.
+ /// - [notKeyHacksPath] Path to optional filters JSON to reduce false positives.
+ /// - [jadxPath] Path to JADX binary. If null, resolves via PATH.
+ /// - [continueOnJadxError] Continue scanning when JADX exits non-zero but artifacts exist (default: true).
   OhMyG0sh({
     required this.apkPath,
     this.outputJson = true,
@@ -29,10 +53,18 @@ class OhMyG0sh {
     this.continueOnJadxError = true,
   });
 
+  /// Create a temporary working directory used for decompilation and scanning.
   Future<void> _createTemp() async {
     _tmpDir = await Directory.systemTemp.createTemp('ohmyg0sh-');
   }
 
+  /// Validate inputs and environment prior to run.
+  ///
+  /// Ensures the APK file exists, locates the JADX binary, and loads the
+  /// pattern and filter configurations.
+  ///
+  /// Throws:
+  /// - [Exception] when the APK or required configuration/binary is missing.
   Future<void> integrityCheck() async {
     final apkFile = File(apkPath);
     if (!apkFile.existsSync()) {
@@ -56,6 +88,9 @@ class OhMyG0sh {
     _notkeyhacks = await _loadNotKeyHacks();
   }
 
+  /// Resolve the absolute path to [cmd] using 'which' (Unix) or 'where' (Windows).
+  ///
+  /// Returns the first resolved path or null if not found.
   Future<String?> _which(String cmd) async {
     try {
       final result = await Process.run(
@@ -71,6 +106,17 @@ class OhMyG0sh {
     return null;
   }
 
+  /// Decompile the APK using JADX into a temporary directory.
+  ///
+  /// Captures and persists stdout/stderr logs and the exit code under the
+  /// temp directory. If [continueOnJadxError] is true and usable artifacts are
+  /// detected, continues despite non-zero exit.
+  ///
+  /// Parameters:
+  /// - [extraArgs] Extra arguments forwarded to JADX.
+  ///
+  /// Throws:
+  /// - [Exception] when JADX is not available or decompilation fails without usable artifacts.
   Future<void> decompile({List<String>? extraArgs}) async {
     await _createTemp();
     final outDir = _tmpDir.path;
@@ -160,6 +206,15 @@ class OhMyG0sh {
     }
   }
 
+  /// Load detection patterns from JSON.
+  ///
+  /// Resolution order when [patternPath] is null:
+  /// 1) /app/config/regexes.json (Docker)
+  /// 2) ./config/regexes.json (current directory)
+  /// 3) script-relative ../../config/regexes.json
+  ///
+  /// Throws:
+  /// - [Exception] if none of the candidates exist.
   Future<Map<String, dynamic>> _loadPatterns() async {
     if (patternPath != null) {
       final f = File(patternPath!);
@@ -198,6 +253,10 @@ class OhMyG0sh {
         'Searched paths: ${candidates.join(", ")}');
   }
 
+  /// Load optional false-positive filters ('notkeyhacks').
+  ///
+  /// Returns an empty map when the file is missing. Resolution order mirrors
+  /// patterns: Docker path, current dir, and script-relative.
   Future<Map<String, dynamic>> _loadNotKeyHacks() async {
     if (notKeyHacksPath != null) {
       final f = File(notKeyHacksPath!);
@@ -229,6 +288,9 @@ class OhMyG0sh {
     return {}; // Return empty if not found (optional filter)
   }
 
+  /// Parse AndroidManifest.xml from the JADX output to establish package name.
+  ///
+  /// Sets [_packageName] when available.
   Future<void> _readPackageName() async {
     // try resources/AndroidManifest.xml (jadx output)
     final manifestPath =
@@ -241,6 +303,11 @@ class OhMyG0sh {
     }
   }
 
+  /// Scan decompiled sources and aggregate matches.
+  ///
+  /// Walks the temp output directory and concurrently scans files with relevant
+  /// extensions (.java, .kt, .xml, .smali, .js, .txt). Populates [_results].
+  /// Prints target package if identified.
   Future<void> scanning() async {
     await _readPackageName();
     if (_packageName != null) {
@@ -265,6 +332,9 @@ class OhMyG0sh {
     await Future.wait(futures);
   }
 
+  /// Scan a single file's content using the loaded [patterns].
+  ///
+  /// Handles files that fail to read by skipping silently.
   Future<void> _scanFile(File file, Map<String, dynamic> patterns) async {
     String content;
     try {
@@ -284,6 +354,10 @@ class OhMyG0sh {
     });
   }
 
+  /// Apply a single regex [patternString] for the given [name] group.
+  ///
+  /// Attempts compilation with multi-line and dot-all first, then falls back.
+  /// Adds unique matches to [_results] unless excluded by [_isFiltered].
   void _applyPattern(String name, String patternString, String content) {
     RegExp re;
     try {
@@ -306,6 +380,12 @@ class OhMyG0sh {
     }
   }
 
+  /// Determine whether a match should be filtered out based on notkeyhacks.
+  ///
+  /// Supports keys:
+  /// - 'patterns': list of regex applied to the match or the file content
+  /// - 'contains': list of substrings that, when present, exclude
+  /// - per-key lists matching [name] with additional regex filters
   bool _isFiltered(String name, String matchStr, String fileContent) {
     if (_notkeyhacks == null || _notkeyhacks!.isEmpty) return false;
 
@@ -347,6 +427,7 @@ class OhMyG0sh {
     return false;
   }
 
+  /// Print a grouped summary of results to the console similar to apkleaks.
   void _printSummaryToConsole() {
     // Print groups similar to apkleaks
     final keys = _results.keys.toList()..sort();
@@ -360,6 +441,15 @@ class OhMyG0sh {
     }
   }
 
+  /// Write scan results to a report file.
+  ///
+  /// When [outputJson] is true, writes a formatted JSON containing 'package',
+  /// 'results', and 'generated_at'. Otherwise writes plaintext sections.
+  ///
+  /// Parameters:
+  /// - [outPath] Optional explicit path; falls back to [outputFile] or defaults.
+  ///
+  /// Prints the final path to console.
   Future<void> generateReport({String? outPath}) async {
     final now = DateTime.now().toIso8601String();
 
@@ -395,12 +485,24 @@ class OhMyG0sh {
     print("** Results saved into '$path'.");
   }
 
+  /// Remove the temporary working directory, ignoring errors.
   Future<void> cleanup() async {
     try {
       if (_tmpDir.existsSync()) await _tmpDir.delete(recursive: true);
     } catch (_) {}
   }
 
+  /// Execute the full scan workflow.
+  ///
+  /// Orchestrates integrity checks, decompilation, scanning, console summary,
+  /// and report generation. Ensures temporary resources are cleaned up even
+  /// on failure.
+  ///
+  /// Parameters:
+  /// - [jadxExtraArgs] Optional list of extra args passed to JADX.
+  ///
+  /// Throws:
+  /// - [Exception] if preconditions fail or decompilation cannot proceed.
   Future<void> run({List<String>? jadxExtraArgs}) async {
     try {
       await integrityCheck();
