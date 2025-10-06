@@ -27,7 +27,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: mathtech/ohmyg0sh
+          images: iqbalfauzien/ohmyg0sh
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
