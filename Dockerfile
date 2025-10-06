@@ -3,7 +3,7 @@ FROM dart:stable AS build
 
 # Install Java and required tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
+    openjdk-21-jre \
     curl \
     unzip \
     ca-certificates \
@@ -17,7 +17,7 @@ RUN curl -L "https://github.com/skylot/jadx/releases/download/v${JADX_VERSION}/j
   && chmod +x /opt/jadx/bin/jadx /opt/jadx/bin/jadx-gui
 
 # Set Java environment variables
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV PATH="${PATH}:/opt/jadx/bin"
 
 # Setup project workspace
@@ -47,7 +47,7 @@ FROM debian:bookworm-slim
 
 # Install Java runtime only (for JADX)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
+    openjdk-21-jre \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy JADX from build stage
@@ -60,6 +60,7 @@ COPY --from=build /app/config /app/config
 
 # Add environment variable for config path (for flexibility)
 ENV OHMYG0SH_CONFIG_PATH=/app/config
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 
 # Default working directory
 WORKDIR /work
