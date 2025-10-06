@@ -2,7 +2,7 @@
 FROM dart:stable AS build
 
 LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
-  description="Lightweight Dart package for detecting possible API key or secret leaks using regex signatures." \
+  description="APK security scanner that detects hardcoded API keys and credentials before they reach production." \
   repository="https://github.com/mathtechstudio/ohmyg0sh.git"
 
 # Install default JRE (headless for smaller size) and unzip
