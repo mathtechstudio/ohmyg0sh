@@ -1,8 +1,21 @@
+/// Test suite for OhMyG0sh and RegexScanner.
+///
+/// Coverage:
+/// - RegexScanner API behavior, matching, and error handling
+/// - OhMyG0sh core validation, defaults, and workflow assumptions
+/// - Configuration presence and basic validity
+/// - File type scanning and integration flows
+///
+/// Notes:
+/// These tests rely on config/regexes.json to exist for most cases.
+/// Pattern-specific tests are skipped if the named pattern is absent.
+library;
 import 'dart:io';
 import 'dart:convert';
 import 'package:test/test.dart';
 import 'package:ohmyg0sh/ohmyg0sh.dart';
 
+/// Top-level test suite for OhMyG0sh and RegexScanner.
 void main() {
   // Load actual patterns from config
   late Map<String, dynamic> patterns;
@@ -16,6 +29,7 @@ void main() {
     }
   });
 
+  /// Tests for the RegexScanner API: initialization, matching behavior, and file handling.
   group('RegexScanner', () {
     late RegexScanner scanner;
     late File tempFile;
@@ -61,6 +75,7 @@ void main() {
     });
   });
 
+  /// Pattern-specific tests to validate common provider keys (Google, AWS) when present in config.
   group('Pattern-Specific Tests', () {
     late RegexScanner scanner;
     late File tempFile;
@@ -132,6 +147,7 @@ void main() {
     });
   });
 
+  /// Core engine parameter validation and default behavior tests.
   group('OhMyG0sh Core', () {
     test('throws error for non-existent APK', () async {
       final scanner = OhMyG0sh(apkPath: 'nonexistent.apk');
@@ -164,6 +180,7 @@ void main() {
     });
   });
 
+  /// Configuration presence and basic validation tests for regexes and filters.
   group('Configuration Loading', () {
     test('loads default regexes.json', () {
       final file = File('config/regexes.json');
@@ -198,6 +215,7 @@ void main() {
     });
   });
 
+  /// File type handling tests to ensure scanning covers common source types.
   group('File Type Detection', () {
     late Directory tempDir;
     late RegexScanner scanner;
@@ -240,6 +258,7 @@ void main() {
     });
   });
 
+  /// Matching behavior tests to ensure deduplication and robustness on special content.
   group('Pattern Matching Behavior', () {
     late File tempFile;
     late RegexScanner scanner;
@@ -284,6 +303,7 @@ void main() {
     });
   });
 
+  /// Error handling tests covering invalid patterns, missing files/directories.
   group('Error Handling', () {
     test('handles invalid regex patterns gracefully', () async {
       final tempFile = File('temp_error_test.txt');
@@ -331,6 +351,7 @@ void main() {
     });
   });
 
+  /// Integration tests simulating a full workflow in a temporary directory.
   group('Integration Tests', () {
     test('full workflow with temp directory', () async {
       final tempDir = await Directory.systemTemp.createTemp('integration_');
