@@ -1,4 +1,4 @@
-# OhMyG0sh
+# 0hmyg0sh
 
 Lightweight Dart package for scanning Android APKs to detect possible API key or secret leaks using regex signatures. It decompiles the APK with jadx, crawls source/resources, and reports matches.
 
@@ -21,13 +21,15 @@ Lightweight Dart package for scanning Android APKs to detect possible API key or
 ### Option 1: Docker (Recommended)
 
 Pull from Docker Hub:
+
 ```bash
-docker pull mathtech/ohmyg0sh:latest
+docker pull iqbalfauzien/ohmyg0sh:latest
 ```
 
 Or build locally:
+
 ```bash
-git clone https://github.com/username/ohmyg0sh.git
+git clone https://github.com/mathtechstudio/ohmyg0sh.git
 cd ohmyg0sh
 docker build -t ohmyg0sh:latest .
 ```
@@ -35,6 +37,7 @@ docker build -t ohmyg0sh:latest .
 ### Option 2: From Source
 
 Requires Dart SDK, Java 17, and jadx installed:
+
 ```bash
 git clone https://github.com/username/ohmyg0sh.git
 cd ohmyg0sh
@@ -47,23 +50,26 @@ dart run bin/ohmyg0sh.dart -f file.apk
 ### With Docker
 
 Basic scan:
+
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 With custom output:
+
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work mathtech/ohmyg0sh:latest \
+docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest \
   -f /work/file.apk -o /work/results.json --json
 ```
 
 With custom patterns:
+
 ```bash
 docker run -it --rm \
   -v "$PWD":/work \
   -v "$PWD/custom-rules.json":/custom-rules.json \
   -w /work \
-  mathtech/ohmyg0sh:latest \
+  iqbalfauzien/ohmyg0sh:latest \
   -f /work/file.apk -p /custom-rules.json
 ```
 
@@ -72,36 +78,42 @@ docker run -it --rm \
 #### macOS/Linux
 
 Temporary:
+
 ```bash
-alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work mathtech/ohmyg0sh:latest'
+alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest'
 ```
 
 Persistent (zsh):
+
 ```bash
-echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work mathtech/ohmyg0sh:latest"' >> ~/.zshrc
+echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work iqbalfauzien/ohmyg0sh:latest"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 Persistent (bash):
+
 ```bash
-echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work mathtech/ohmyg0sh:latest"' >> ~/.bashrc
+echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work iqbalfauzien/ohmyg0sh:latest"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
 #### Windows PowerShell
 
 Add to $PROFILE:
+
 ```powershell
-function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work mathtech/ohmyg0sh:latest $args }
+function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work iqbalfauzien/ohmyg0sh:latest $args }
 ```
 
 Make persistent:
+
 ```powershell
 if (!(Test-Path $PROFILE)) { New-Item -Path $PROFILE -ItemType File -Force }
-Add-Content $PROFILE 'function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work mathtech/ohmyg0sh:latest $args }'
+Add-Content $PROFILE 'function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work iqbalfauzien/ohmyg0sh:latest $args }'
 ```
 
 After setup:
+
 ```bash
 ohmyg0sh -f file.apk
 ohmyg0sh -f file.apk -o results.json --json
@@ -110,38 +122,42 @@ ohmyg0sh -f file.apk -o results.json --json
 ### From Source
 
 Basic usage:
+
 ```bash
 dart run bin/ohmyg0sh.dart -f ~/path/to/file.apk
 ```
 
 With custom output:
+
 ```bash
 dart run bin/ohmyg0sh.dart -f file.apk -o results.json --json
 ```
 
 With custom patterns:
+
 ```bash
 dart run bin/ohmyg0sh.dart -f file.apk -p custom-rules.json
 ```
 
 ## Options
 
-| Argument       | Description                           | Example                                           |
-|----------------|---------------------------------------|---------------------------------------------------|
-| -f, --file     | APK file to scan                      | ohmyg0sh -f file.apk                              |
-| -o, --output   | Output file (auto-generated if not set)| ohmyg0sh -f file.apk -o results.txt               |
-| -p, --pattern  | Path to custom patterns JSON          | ohmyg0sh -f file.apk -p custom-rules.json         |
-| -a, --args     | Disassembler arguments                | ohmyg0sh -f file.apk -a "--deobf --log-level DEBUG" |
-| --json         | Save as JSON format                   | ohmyg0sh -f file.apk --json                       |
-| --jadx         | Path to jadx binary                    | ohmyg0sh -f file.apk --jadx /usr/bin/jadx         |
-| -n, --notkeys  | Path to notkeyhacks.json              | ohmyg0sh -f file.apk -n custom-filters.json       |
-| -h, --help     | Show help message                     | ohmyg0sh --help                                   |
+| Argument      | Description                             | Example                                             |
+| ------------- | --------------------------------------- | --------------------------------------------------- |
+| -f, --file    | APK file to scan                        | ohmyg0sh -f file.apk                                |
+| -o, --output  | Output file (auto-generated if not set) | ohmyg0sh -f file.apk -o results.txt                 |
+| -p, --pattern | Path to custom patterns JSON            | ohmyg0sh -f file.apk -p custom-rules.json           |
+| -a, --args    | Disassembler arguments                  | ohmyg0sh -f file.apk -a "--deobf --log-level DEBUG" |
+| --json        | Save as JSON format                     | ohmyg0sh -f file.apk --json                         |
+| --jadx        | Path to jadx binary                     | ohmyg0sh -f file.apk --jadx /usr/bin/jadx           |
+| -n, --notkeys | Path to notkeyhacks.json                | ohmyg0sh -f file.apk -n custom-filters.json         |
+| -h, --help    | Show help message                       | ohmyg0sh --help                                     |
 
 ## Configuration
 
 ### Regex Patterns (config/regexes.json)
 
 Define detection patterns for various API keys and secrets:
+
 ```json
 {
   "Google_API_Key": "AIza[0-9A-Za-z\\-_]{35}",
@@ -152,6 +168,7 @@ Define detection patterns for various API keys and secrets:
 ```
 
 The package includes a comprehensive set of default patterns for:
+
 - AWS keys and S3 buckets
 - Google API keys and OAuth tokens
 - GitHub tokens
@@ -163,6 +180,7 @@ The package includes a comprehensive set of default patterns for:
 ### False Positive Filters (config/notkeyhacks.json)
 
 Reduce noise by filtering out known false positives:
+
 ```json
 {
   "patterns": [
@@ -180,6 +198,7 @@ Reduce noise by filtering out known false positives:
 ```
 
 Supported filter types:
+
 - patterns: List of regex patterns to ignore (matches against found string or file content)
 - contains: List of substrings to ignore
 - per-key filters: Key name maps to regex list to ignore for that specific signature
@@ -187,6 +206,7 @@ Supported filter types:
 ### Custom Patterns Example
 
 Create your own pattern file:
+
 ```json
 {
   "Custom_API_Key": "myapp_[0-9a-f]{32}",
@@ -195,6 +215,7 @@ Create your own pattern file:
 ```
 
 Use it:
+
 ```bash
 ohmyg0sh -f file.apk -p ./my-custom-patterns.json
 ```
@@ -202,6 +223,7 @@ ohmyg0sh -f file.apk -p ./my-custom-patterns.json
 ## Programmatic API
 
 You can use OhMyG0sh as a library in your Dart projects:
+
 ```dart
 import 'package:ohmyg0sh/ohmyg0sh.dart';
 
@@ -228,7 +250,8 @@ Future<void> main() async {
 ## Output
 
 ### Text Format (default)
-```
+
+```bash
 ** Decompiling APK...
 ** Scanning files...
 ** Scanning against 'com.example.app'
@@ -247,6 +270,7 @@ Future<void> main() async {
 ```
 
 ### JSON Format (--json)
+
 ```json
 {
   "package": "com.example.app",
@@ -269,12 +293,14 @@ Future<void> main() async {
 ```
 
 Output file naming:
+
 - Default: results_{timestamp}.txt or results_{timestamp}.json
 - Custom: Use -o flag to specify your own filename
 
 ## Scanning Details
 
 ### File Types Scanned
+
 - .java - Java source files
 - .kt - Kotlin source files
 - .smali - Smali bytecode
@@ -283,6 +309,7 @@ Output file naming:
 - .txt - Text files
 
 ### Detection Process
+
 - Decompilation: APK is decompiled using jadx to extract source code and resources
 - Package Extraction: Package name is extracted from AndroidManifest.xml
 - File Scanning: All relevant file types are scanned recursively
@@ -291,6 +318,7 @@ Output file naming:
 - Reporting: Findings are grouped by signature type and saved
 
 ### Temporary Files
+
 - Decompiled output is stored in system temp directory
 - Temp files are automatically cleaned up after scanning
 - Logs are preserved in temp directory for troubleshooting:
@@ -301,39 +329,48 @@ Output file naming:
 ## Troubleshooting
 
 ### JADX not found in PATH (Docker)
+
 Not applicable when using Docker - jadx is pre-installed in the image.
 
 ### JADX not found in PATH (Source installation)
+
 The CLI will prompt for installation:
-```
+
+```bash
 jadx not found in PATH. Do you want to install jadx now? [Y/n]:
 ```
 
 On macOS with Homebrew:
+
 ```bash
 brew install jadx
 ```
 
 Manual installation:
-- Download from: https://github.com/skylot/jadx/releases
+
+- Download from: <https://github.com/skylot/jadx/releases>
 - Extract and add to PATH
 - Verify: which jadx or jadx --version
 
 Or specify custom path:
+
 ```bash
 ohmyg0sh -f file.apk --jadx /path/to/jadx
 ```
 
 ### JADX exit code 1
+
 The tool continues if decompiled artifacts exist. Check logs in temp directory:
 
 Warning:
-```
+
+```bash
 jadx exited with code 1, but decompiled artifacts were found under /tmp/ohmyg0sh-xyz.
 Continuing. See logs: /tmp/ohmyg0sh-xyz/jadx_stdout.log, /tmp/ohmyg0sh-xyz/jadx_stderr.log
 ```
 
 Try additional arguments:
+
 ```bash
 # Enable deobfuscation
 ohmyg0sh -f file.apk -a "--deobf"
@@ -346,18 +383,22 @@ ohmyg0sh -f file.apk -a "--deobf --show-bad-code --log-level DEBUG"
 ```
 
 Common jadx arguments:
+
 - --deobf - Enable deobfuscation
 - --show-bad-code - Show inconsistent code
 - --threads-count N - Use N threads for decompilation
 - --log-level LEVEL - Set log level (QUIET, PROGRESS, ERROR, WARN, INFO, DEBUG)
 
 ### Regex file not found
+
 Ensure config/regexes.json exists or provide custom path:
+
 ```bash
 ohmyg0sh -f file.apk -p /path/to/custom-rules.json
 ```
 
 The tool searches in order:
+
 1. Path specified by -p flag
 2. /app/config/regexes.json (Docker environment)
 3. ./config/regexes.json (current directory)
@@ -368,47 +409,56 @@ The tool searches in order:
 Use absolute paths:
 
 PowerShell:
+
 ```powershell
-docker run -it --rm -v C:\Users\You\apks:/work -w /work mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v C:\Users\You\apks:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 Command Prompt:
+
 ```cmd
-docker run -it --rm -v C:\Users\You\apks:/work -w /work mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v C:\Users\You\apks:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 Or use WSL2:
 
 From WSL:
+
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ### Permission denied errors
+
 On Linux/macOS, ensure Docker has permission to mount volumes:
+
 ```bash
 # Run with proper permissions
-docker run -it --rm -v "$PWD":/work -w /work --user $(id -u):$(id -g) mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work --user $(id -u):$(id -g) iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ### APK file not found
+
 Ensure correct path and file exists:
+
 ```bash
 # Check file exists
 ls -lh /path/to/file.apk
 ```
 
 Use absolute path:
+
 ```bash
-docker run -it --rm -v /absolute/path:/work -w /work mathtech/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v /absolute/path:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ## Development
 
 ### Setup
+
 ```bash
 # Clone repository
-git clone https://github.com/username/ohmyg0sh.git
+git clone https://github.com/mathtechstudio/ohmyg0sh.git
 cd ohmyg0sh
 
 # Install dependencies
@@ -425,6 +475,7 @@ dart analyze
 ```
 
 ### Build Docker Image
+
 ```bash
 # Build
 docker build -t ohmyg0sh:dev .
@@ -433,40 +484,18 @@ docker build -t ohmyg0sh:dev .
 docker run -it --rm ohmyg0sh:dev --help
 
 # Tag for release
-docker tag ohmyg0sh:dev mathtech/ohmyg0sh:1.0.0
-docker tag ohmyg0sh:dev mathtech/ohmyg0sh:latest
+docker tag ohmyg0sh:dev iqbalfauzien/ohmyg0sh:1.0.0
+docker tag ohmyg0sh:dev iqbalfauzien/ohmyg0sh:latest
 
 # Push to Docker Hub
-docker push mathtech/ohmyg0sh:1.0.0
-docker push mathtech/ohmyg0sh:latest
-```
-
-## Project Structure
-```text
-ohmyg0sh/
-├── bin/
-│   └── ohmyg0sh.dart          # CLI entry point
-├── lib/
-│   ├── ohmyg0sh.dart          # Library exports
-│   └── src/
-│       ├── core.dart          # Core OhMyG0sh class
-│       └── regex_scanner.dart # Regex scanning utilities
-├── config/
-│   ├── regexes.json           # Detection patterns
-│   └── notkeyhacks.json       # False positive filters
-├── example/
-│   └── ohmyg0sh_example.dart  # Usage examples
-├── test/
-│   └── ohmyg0sh_test.dart     # Unit tests
-├── Dockerfile                  # Docker configuration
-├── .dockerignore               # Docker build exclusions
-├── pubspec.yaml                # Dart package configuration
-└── README.md                   # This file
+docker push iqbalfauzien/ohmyg0sh:1.0.0
+docker push iqbalfauzien/ohmyg0sh:latest
 ```
 
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:
+
 - Fork the repository
 - Create a feature branch: git checkout -b feature/my-feature
 - Commit your changes: git commit -am 'Add new feature'
@@ -476,6 +505,7 @@ Contributions are welcome! Please follow these guidelines:
 ## Adding New Patterns
 
 To add new detection patterns:
+
 - Edit config/regexes.json
 - Add your pattern with descriptive name
 - Test with sample APKs
@@ -483,6 +513,7 @@ To add new detection patterns:
 - Submit PR with examples
 
 Example:
+
 ```json
 {
   "My_Custom_Service_Key": "myservice_[a-f0-9]{32}"
