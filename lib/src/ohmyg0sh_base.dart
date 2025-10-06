@@ -4,19 +4,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-  /// OhMyG0sh core engine.
-  ///
-  /// Decompiles APKs and scans source artifacts for hardcoded secrets and
-  /// endpoints. The typical workflow is:
-  /// 1) integrityCheck()
-  /// 2) decompile()
-  /// 3) scanning()
-  /// 4) generateReport()
-  /// 5) cleanup()
-  ///
-  /// Instances retain temporary state (e.g., package name and aggregated
-  /// results) for the duration of a run. A temporary directory is created per
-  /// run and removed by [cleanup].
+/// OhMyG0sh core engine.
+///
+/// Decompiles APKs and scans source artifacts for hardcoded secrets and
+/// endpoints. The typical workflow is:
+/// 1) integrityCheck()
+/// 2) decompile()
+/// 3) scanning()
+/// 4) generateReport()
+/// 5) cleanup()
+///
+/// Instances retain temporary state (e.g., package name and aggregated
+/// results) for the duration of a run. A temporary directory is created per
+/// run and removed by [cleanup].
 class OhMyG0sh {
   final String apkPath;
   final bool outputJson;
@@ -31,18 +31,18 @@ class OhMyG0sh {
   Map<String, dynamic>? _patterns;
   Map<String, dynamic>? _notkeyhacks;
 
- /// Create a new scanner instance.
- ///
- /// Required:
- /// - [apkPath] Path to the target APK to analyze.
- ///
- /// Optional:
- /// - [outputJson] Write report as JSON (default: true). When false, writes plaintext.
- /// - [outputFile] Destination report path. If null, a default name is used.
- /// - [patternPath] Path to regex patterns JSON. If null, default resolution is used.
- /// - [notKeyHacksPath] Path to optional filters JSON to reduce false positives.
- /// - [jadxPath] Path to JADX binary. If null, resolves via PATH.
- /// - [continueOnJadxError] Continue scanning when JADX exits non-zero but artifacts exist (default: true).
+  /// Create a new scanner instance.
+  ///
+  /// Required:
+  /// - [apkPath] Path to the target APK to analyze.
+  ///
+  /// Optional:
+  /// - [outputJson] Write report as JSON (default: true). When false, writes plaintext.
+  /// - [outputFile] Destination report path. If null, a default name is used.
+  /// - [patternPath] Path to regex patterns JSON. If null, default resolution is used.
+  /// - [notKeyHacksPath] Path to optional filters JSON to reduce false positives.
+  /// - [jadxPath] Path to JADX binary. If null, resolves via PATH.
+  /// - [continueOnJadxError] Continue scanning when JADX exits non-zero but artifacts exist (default: true).
   OhMyG0sh({
     required this.apkPath,
     this.outputJson = true,
