@@ -41,9 +41,13 @@ class RegexScanner {
         .where((f) => !p.basename(f.path).startsWith('.'));
 
     for (final file in files) {
-      final content = await file.readAsString();
-      final found = _scanContent(content);
-      if (found.isNotEmpty) result[file.path] = found.keys.toList();
+      try {
+        final content = await file.readAsString();
+        final found = _scanContent(content);
+        if (found.isNotEmpty) result[file.path] = found.keys.toList();
+      } catch (_) {
+        // Skip files that can't be read
+      }
     }
 
     return result;
@@ -52,10 +56,34 @@ class RegexScanner {
   Map<String, List<String>> _scanContent(String content) {
     final results = <String, List<String>>{};
     for (final entry in _patterns.entries) {
-      final matches = RegExp(entry.value, multiLine: true).allMatches(content);
-      if (matches.isNotEmpty) {
-        results[entry.key] =
-            matches.map((m) => m.group(0) ?? '').toSet().toList();
+      try {
+        // Try with multiLine and caseSensitive first
+        final matches = RegExp(
+          entry.value,
+          multiLine: true,
+          caseSensitive: true,
+        ).allMatches(content);
+
+        if (matches.isNotEmpty) {
+          results[entry.key] =
+              matches.map((m) => m.group(0) ?? '').toSet().toList();
+        }
+      } catch (_) {
+        // If pattern is invalid, try case-insensitive
+        try {
+          final matches = RegExp(
+            entry.value,
+            multiLine: true,
+            caseSensitive: false,
+          ).allMatches(content);
+
+          if (matches.isNotEmpty) {
+            results[entry.key] =
+                matches.map((m) => m.group(0) ?? '').toSet().toList();
+          }
+        } catch (_) {
+          // Skip invalid patterns silently
+        }
       }
     }
     return results;
