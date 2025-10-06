@@ -1,0 +1,37 @@
+# Exclude dev-only assets and CI files from the published package
+
+# Docker and CI
+
+.dockerignore
+Dockerfile
+docker-compose.yml
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Development and IDE metadata
+
+.vscode/
+.idea/
+*.iml
+
+# Documentation (keep README)
+
+docs/
+*.md
+!README.md
+
+# Build outputs and temp
+
+build/
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# APKs and scan outputs (example artifacts)
+
+*.apk
+results*.txt
+results*.json

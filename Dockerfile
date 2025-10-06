@@ -33,8 +33,10 @@ RUN dart pub get
 COPY config/ ./config/
 COPY bin/ ./bin/
 COPY lib/ ./lib/
+COPY tool/ ./tool/
 
 # Compile to native executable for better performance
+RUN dart run tool/version_gen.dart
 RUN dart compile exe bin/ohmyg0sh.dart -o /app/ohmyg0sh
 
 
