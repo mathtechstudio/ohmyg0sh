@@ -5,9 +5,9 @@ LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
       description="Lightweight Dart package for detecting possible API key or secret leaks using regex signatures." \
       repository="https://github.com/mathtechstudio/ohmyg0sh.git"
 
-# Install Java 17 JRE (runtime only, not full JDK)
+# Install Java 21 JRE (runtime only, not full JDK)
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jre-headless && \
+    apt-get install -y openjdk-21-jre-headless && \
     apt-get install -y unzip && \
     rm -rf /var/lib/apt/lists/*
 
@@ -19,7 +19,7 @@ RUN curl -L "https://github.com/skylot/jadx/releases/download/v${JADX_VERSION}/j
   && chmod +x /opt/jadx/bin/jadx /opt/jadx/bin/jadx-gui
 
 # Set environment variables
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV PATH="${PATH}:/opt/jadx/bin"
 
 # Working directory
@@ -45,7 +45,7 @@ FROM debian:bookworm-slim
 
 # Install minimal runtime (JRE only)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
+    openjdk-21-jre-headless \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy jadx binaries
