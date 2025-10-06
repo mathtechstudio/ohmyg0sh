@@ -6,4 +6,5 @@ app-release.apk
 
 results.json
 
+RELEASE_STEP.md
 lib/src/version.dart
