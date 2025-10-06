@@ -48,13 +48,13 @@ dart pub get
 Pull from Docker Hub:
 
 ```bash
-docker pull iqbalfauzien/ohmyg0sh:latest
+docker pull mathtechstudio/ohmyg0sh:latest
 ```
 
 Run:
 
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ## Requirements
@@ -288,7 +288,7 @@ Create alias for convenience:
 
 ```bash
 # macOS/Linux
-alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest'
+alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest'
 
 # Then use like:
 ohmyg0sh -f file.apk
@@ -301,7 +301,7 @@ docker run -it --rm \
   -v "$PWD":/work \
   -v "$PWD/patterns.json":/patterns.json \
   -w /work \
-  iqbalfauzien/ohmyg0sh:latest \
+  mathtechstudio/ohmyg0sh:latest \
   -f /work/file.apk -p /patterns.json
 ```
 
