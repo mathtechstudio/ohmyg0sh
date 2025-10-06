@@ -15,11 +15,12 @@ docker-compose.yml
 .idea/
 *.iml
 
-# Documentation (keep README)
+# Documentation (keep README and CHANGELOG)
 
 docs/
 *.md
 !README.md
+!CHANGELOG.md
 
 # Build outputs and temp
 
