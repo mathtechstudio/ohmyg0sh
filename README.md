@@ -34,7 +34,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ohmyg0sh: ^1.0.0
+  ohmyg0sh: ^1.69.777
 ```
 
 Then install:
