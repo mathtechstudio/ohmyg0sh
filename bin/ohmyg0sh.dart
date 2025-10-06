@@ -2,6 +2,8 @@
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:ohmyg0sh/ohmyg0sh.dart';
+import 'package:ohmyg0sh/src/cli_header.dart';
+import 'package:ohmyg0sh/src/version.dart';
 
 Future<String?> _whichCmd(String cmd) async {
   try {
@@ -79,6 +81,8 @@ Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
 Future<void> main(List<String> argv) async {
   final parser = ArgParser()
     ..addFlag('help', abbr: 'h', help: 'Show help', negatable: false)
+    ..addFlag('version', abbr: 'v', help: 'Show version', negatable: false)
+    ..addFlag('no-banner', help: 'Hide banner on startup', negatable: false)
     ..addOption('file', abbr: 'f', help: 'APK file to scanning')
     ..addOption('output',
         abbr: 'o', help: 'Write results to file (random if not set)')
@@ -98,17 +102,30 @@ Future<void> main(List<String> argv) async {
     exit(64);
   }
 
+  // Show version
+  if (args['version'] as bool) {
+    displayHeader('v$packageVersion');
+    exit(0);
+  }
+
+  // Show help
   if (args['help'] as bool) {
-    print('Usage: ohmyg0sh -f <apk> [options]\n');
+    displayHeader('v$packageVersion');
+    print('\nUsage: ohmyg0sh -f <apk> [options]\n');
     print(parser.usage);
     exit(0);
+  }
+
+  // Display header for normal operation (unless --no-banner)
+  if (!(args['no-banner'] as bool)) {
+    displayHeader('v$packageVersion');
   }
 
   String? apk = args['file'] as String?;
   if ((apk == null || apk.isEmpty) && args.rest.isEmpty) {
     stderr
         .writeln('Error: APK path required. Provide -f <apk> or positionally.');
-    print('Usage: ohmyg0sh -f <apk> [options]\n');
+    print('\nUsage: ohmyg0sh -f <apk> [options]\n');
     print(parser.usage);
     exit(64);
   }
