@@ -5,10 +5,9 @@ LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
       description="Lightweight Dart package for detecting possible API key or secret leaks using regex signatures." \
       repository="https://github.com/mathtechstudio/ohmyg0sh.git"
 
-# Install Java 21 JRE (runtime only, not full JDK)
+# Install Java 17 JRE (runtime only, not full JDK)
 RUN apt-get update && \
-    apt-get install -y openjdk-21-jre && \
-    apt-get install -y unzip && \
+    apt-get install -y openjdk-17-jre unzip && \
     rm -rf /var/lib/apt/lists/*
 
 # Install jadx 1.5.3
@@ -19,7 +18,7 @@ RUN curl -L "https://github.com/skylot/jadx/releases/download/v${JADX_VERSION}/j
   && chmod +x /opt/jadx/bin/jadx /opt/jadx/bin/jadx-gui
 
 # Set environment variables
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${PATH}:/opt/jadx/bin"
 
 # Working directory
@@ -43,13 +42,14 @@ RUN dart compile exe bin/ohmyg0sh.dart -o /app/ohmyg0sh
 # Runtime
 FROM debian:bookworm-slim
 
-# Install minimal runtime (JRE only)
+# Install minimal runtime (JRE 17 only)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jre \
+    openjdk-17-jre \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy jadx binaries
 COPY --from=build /opt/jadx /opt/jadx
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="/opt/jadx/bin:${PATH}"
 
 # Copy compiled Dart binary and config files
