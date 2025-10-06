@@ -27,6 +27,5 @@ flutter:
     - config/regexes.json
     - config/notkeyhacks.json
 
-
 executables:
   ohmyg0sh: ohmyg0sh

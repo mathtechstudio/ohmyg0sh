@@ -30,12 +30,15 @@ Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
   if (found != null) return;
 
   // Prompt to install
-  stdout.write('jadx not found in PATH. Do you want to install jadx now? [Y/n]: ');
+  stdout.write(
+      'jadx not found in PATH. Do you want to install jadx now? [Y/n]: ');
   final resp = stdin.readLineSync()?.trim().toLowerCase();
   final yes = resp == null || resp.isEmpty || resp == 'y' || resp == 'yes';
   if (!yes) {
-    stderr.writeln("jadx is required to decompile APKs. Install it and re-run, or provide --jadx with a valid path.");
-    stderr.writeln("Install instructions: https://github.com/skylot/jadx#installation");
+    stderr.writeln(
+        "jadx is required to decompile APKs. Install it and re-run, or provide --jadx with a valid path.");
+    stderr.writeln(
+        "Install instructions: https://github.com/skylot/jadx#installation");
     exit(2);
   }
 
@@ -52,13 +55,15 @@ Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
       );
       final code = await proc.exitCode;
       if (code != 0) {
-        stderr.writeln('Homebrew installation failed (exit code $code). Please install manually: https://github.com/skylot/jadx#installation');
+        stderr.writeln(
+            'Homebrew installation failed (exit code $code). Please install manually: https://github.com/skylot/jadx#installation');
         exit(2);
       }
       // Verify installation
       final verify = await _whichCmd('jadx');
       if (verify == null) {
-        stderr.writeln('jadx not found after installation. Ensure it is in PATH or re-run with --jadx=/path/to/jadx');
+        stderr.writeln(
+            'jadx not found after installation. Ensure it is in PATH or re-run with --jadx=/path/to/jadx');
         exit(2);
       }
       return;
@@ -66,7 +71,8 @@ Future<void> _ensureJadxInstalledOrPrompt(String? customJadxPath) async {
   }
 
   // Fallback: manual instructions
-  stderr.writeln('Automatic installation not available. Please install jadx manually: https://github.com/skylot/jadx#installation');
+  stderr.writeln(
+      'Automatic installation not available. Please install jadx manually: https://github.com/skylot/jadx#installation');
   exit(2);
 }
 
@@ -74,9 +80,11 @@ Future<void> main(List<String> argv) async {
   final parser = ArgParser()
     ..addFlag('help', abbr: 'h', help: 'Show help', negatable: false)
     ..addOption('file', abbr: 'f', help: 'APK file to scanning')
-    ..addOption('output', abbr: 'o', help: 'Write results to file (random if not set)')
+    ..addOption('output',
+        abbr: 'o', help: 'Write results to file (random if not set)')
     ..addOption('pattern', abbr: 'p', help: 'Path to custom patterns JSON')
-    ..addOption('args', abbr: 'a', help: 'Disassembler arguments (quoted, space-separated)')
+    ..addOption('args',
+        abbr: 'a', help: 'Disassembler arguments (quoted, space-separated)')
     ..addOption('jadx', help: 'Path to jadx binary')
     ..addFlag('json', help: 'Save as JSON format', negatable: false)
     ..addOption('notkeys', abbr: 'n', help: 'Path to notkeyhacks.json');
@@ -98,7 +106,8 @@ Future<void> main(List<String> argv) async {
 
   String? apk = args['file'] as String?;
   if ((apk == null || apk.isEmpty) && args.rest.isEmpty) {
-    stderr.writeln('Error: APK path required. Provide -f <apk> or positionally.');
+    stderr
+        .writeln('Error: APK path required. Provide -f <apk> or positionally.');
     print('Usage: ohmyg0sh -f <apk> [options]\n');
     print(parser.usage);
     exit(64);
@@ -107,7 +116,8 @@ Future<void> main(List<String> argv) async {
 
   // Derived options
   final String apkStr = apk!;
-  final bool outputJson = (args['json'] as bool); // default false when not provided
+  final bool outputJson =
+      (args['json'] as bool); // default false when not provided
   final String? outArg = args['output'] as String?;
   final String outPath = (outArg == null || outArg.isEmpty)
       ? 'results_${DateTime.now().millisecondsSinceEpoch}.${outputJson ? 'json' : 'txt'}'
