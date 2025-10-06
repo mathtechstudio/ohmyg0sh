@@ -1,5 +1,4 @@
-// lib/ohmyg0sh.dart
-library ohmyg0sh;
+library;
 
 export 'src/core.dart';
 export 'src/regex_scanner.dart';
