@@ -1,63 +1,66 @@
-# Dockerfile for ohmyg0sh CLI
+# Build
 FROM dart:stable AS build
 
-# Install Java 17 and tools
+LABEL maintainer="Iqbal Fauzi <iqbalfauzien@gmail.com>" \
+      description="Lightweight Dart package for detecting possible API key or secret leaks using regex signatures." \
+      repository="https://github.com/mathtechstudio/ohmyg0sh.git"
+
+# Install Java 17 JRE (runtime only, not full JDK)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk-headless \
+    openjdk-17-jre-headless \
     curl \
     unzip \
     ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Install jadx
+# Install jadx 1.5.3
 ENV JADX_VERSION=1.5.3
 RUN curl -L "https://github.com/skylot/jadx/releases/download/v${JADX_VERSION}/jadx-${JADX_VERSION}.zip" -o /tmp/jadx.zip \
   && unzip /tmp/jadx.zip -d /opt/jadx \
   && rm /tmp/jadx.zip \
-  && chmod +x /opt/jadx/bin/jadx
+  && chmod +x /opt/jadx/bin/jadx /opt/jadx/bin/jadx-gui
 
 # Set environment variables
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${PATH}:/opt/jadx/bin"
 
-# App workspace
+# Working directory
 WORKDIR /app
 
-# Copy dependency files first for better caching
-COPY pubspec.yaml pubspec.lock ./
+# Copy dependency files first for caching
+COPY pubspec.* ./
 
-# Resolve Dart dependencies
+# Get Dart dependencies
 RUN dart pub get
 
-# Copy config files (must be present for runtime)
+# Copy remaining files
 COPY config/ ./config/
-
-# Copy source code
 COPY bin/ ./bin/
 COPY lib/ ./lib/
 
 # Compile to native executable for better performance
-RUN dart compile exe bin/ohmyg0sh.dart -o ohmyg0sh
+RUN dart compile exe bin/ohmyg0sh.dart -o /app/ohmyg0sh
 
-# Minimal runtime image
+
+# Runtime
 FROM debian:bookworm-slim
 
-# Install only runtime dependencies
+# Install minimal runtime (JRE only)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk-headless \
+    openjdk-17-jre-headless \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy jadx from build stage
+# Copy jadx binaries
 COPY --from=build /opt/jadx /opt/jadx
 ENV PATH="/opt/jadx/bin:${PATH}"
 
-# Copy compiled binary and config
+# Copy compiled Dart binary and config files
 COPY --from=build /app/ohmyg0sh /usr/local/bin/ohmyg0sh
 COPY --from=build /app/config /app/config
 
-# Set working directory
+# Set default work directory
 WORKDIR /work
 
-# Entrypoint
+# Entrypoint for the CLI app
 ENTRYPOINT ["ohmyg0sh"]
 CMD ["--help"]
