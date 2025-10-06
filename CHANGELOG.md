@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.69.777] - 2025-10-07
+## [1.69.777] - 2025-10
 
-### Added
+## Added
 
 - Initial release of ohmyg0sh APK security scanner
 - APK decompilation using jadx 1.5.3
@@ -23,13 +23,13 @@ All notable changes to this project will be documented in this file.
 - Automatic cleanup of temporary files
 - Detailed logging for troubleshooting
 
-### Security
+## Security
 
 - Scans Java, Kotlin, Smali, XML, JavaScript, and text files
 - Package name extraction from AndroidManifest.xml
 - Pattern matching with context-aware filtering
 
-### Documentation
+## Documentation
 
 - Complete README with installation and usage examples
 - Docker Hub deployment guide
