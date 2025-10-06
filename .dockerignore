@@ -1,0 +1,58 @@
+# Git
+
+.git/
+.gitignore
+.github/
+
+# Dart
+
+.dart_tool/
+.packages
+build/
+*.lock
+
+# IDE
+
+.idea/
+.vscode/
+*.iml
+
+# Documentation
+
+*.md
+!README.md
+docs/
+
+# Test files
+
+test/
+coverage/
+
+# Examples (optional, comment out if you want to include)
+
+example/
+
+# Logs and temp files
+
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# APK files and results
+
+*.apk
+results*.txt
+results*.json
+
+# Docker
+
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# CI/CD
+
+.travis.yml
+.gitlab-ci.yml
