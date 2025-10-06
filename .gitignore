@@ -6,6 +6,4 @@ app-release.apk
 
 results.json
 
-.dockerignore
-
 lib/src/version.dart
