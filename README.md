@@ -23,7 +23,7 @@ Lightweight Dart package for scanning Android APKs to detect possible API key or
 Pull from Docker Hub:
 
 ```bash
-docker pull iqbalfauzien/ohmyg0sh:latest
+docker pull mathtechstudio/ohmyg0sh:latest
 ```
 
 Or build locally:
@@ -52,13 +52,13 @@ dart run bin/ohmyg0sh.dart -f file.apk
 Basic scan:
 
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 With custom output:
 
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest \
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest \
   -f /work/file.apk -o /work/results.json --json
 ```
 
@@ -69,7 +69,7 @@ docker run -it --rm \
   -v "$PWD":/work \
   -v "$PWD/custom-rules.json":/custom-rules.json \
   -w /work \
-  iqbalfauzien/ohmyg0sh:latest \
+  mathtechstudio/ohmyg0sh:latest \
   -f /work/file.apk -p /custom-rules.json
 ```
 
@@ -80,20 +80,20 @@ docker run -it --rm \
 Temporary:
 
 ```bash
-alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest'
+alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest'
 ```
 
 Persistent (zsh):
 
 ```bash
-echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work iqbalfauzien/ohmyg0sh:latest"' >> ~/.zshrc
+echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work mathtechstudio/ohmyg0sh:latest"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 Persistent (bash):
 
 ```bash
-echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work iqbalfauzien/ohmyg0sh:latest"' >> ~/.bashrc
+echo 'alias ohmyg0sh="docker run --rm -it -v \"\$PWD\":/work -w /work mathtechstudio/ohmyg0sh:latest"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -102,14 +102,14 @@ source ~/.bashrc
 Add to $PROFILE:
 
 ```powershell
-function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work iqbalfauzien/ohmyg0sh:latest $args }
+function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work mathtechstudio/ohmyg0sh:latest $args }
 ```
 
 Make persistent:
 
 ```powershell
 if (!(Test-Path $PROFILE)) { New-Item -Path $PROFILE -ItemType File -Force }
-Add-Content $PROFILE 'function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work iqbalfauzien/ohmyg0sh:latest $args }'
+Add-Content $PROFILE 'function ohmyg0sh { docker run --rm -it -v ${PWD}:/work -w /work mathtechstudio/ohmyg0sh:latest $args }'
 ```
 
 After setup:
@@ -411,13 +411,13 @@ Use absolute paths:
 PowerShell:
 
 ```powershell
-docker run -it --rm -v C:\Users\You\apks:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v C:\Users\You\apks:/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 Command Prompt:
 
 ```cmd
-docker run -it --rm -v C:\Users\You\apks:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v C:\Users\You\apks:/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 Or use WSL2:
@@ -425,7 +425,7 @@ Or use WSL2:
 From WSL:
 
 ```bash
-docker run -it --rm -v "$PWD":/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ### Permission denied errors
@@ -434,7 +434,7 @@ On Linux/macOS, ensure Docker has permission to mount volumes:
 
 ```bash
 # Run with proper permissions
-docker run -it --rm -v "$PWD":/work -w /work --user $(id -u):$(id -g) iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work --user $(id -u):$(id -g) mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ### APK file not found
@@ -449,7 +449,7 @@ ls -lh /path/to/file.apk
 Use absolute path:
 
 ```bash
-docker run -it --rm -v /absolute/path:/work -w /work iqbalfauzien/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v /absolute/path:/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
 ```
 
 ## Development
@@ -484,12 +484,12 @@ docker build -t ohmyg0sh:dev .
 docker run -it --rm ohmyg0sh:dev --help
 
 # Tag for release
-docker tag ohmyg0sh:dev iqbalfauzien/ohmyg0sh:1.0.0
-docker tag ohmyg0sh:dev iqbalfauzien/ohmyg0sh:latest
+docker tag ohmyg0sh:dev mathtechstudio/ohmyg0sh:1.0.0
+docker tag ohmyg0sh:dev mathtechstudio/ohmyg0sh:latest
 
 # Push to Docker Hub
-docker push iqbalfauzien/ohmyg0sh:1.0.0
-docker push iqbalfauzien/ohmyg0sh:latest
+docker push mathtechstudio/ohmyg0sh:1.0.0
+docker push mathtechstudio/ohmyg0sh:latest
 ```
 
 ## Contributing
