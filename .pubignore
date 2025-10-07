@@ -36,3 +36,6 @@ Thumbs.db
 *.apk
 results*.txt
 results*.json
+
+# Generated scan results (exclude from publication)
+-youareashole.json
