@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:path/path.dart' as p;
 
 /// OhMyG0sh core engine.
@@ -224,21 +225,33 @@ class OhMyG0sh {
       return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
     }
 
-    // Priority order untuk Docker environment:
-    // 1. /app/config/regexes.json (Docker internal)
-    // 2. ./config/regexes.json (current directory)
-    // 3. Relative to script location
-
-    final candidates = [
-      '/app/config/regexes.json', // Docker path
-      p.join(Directory.current.path, 'config', 'regexes.json'), // Current dir
+    // Resolution order:
+    // 1) /app/config/regexes.json (Docker)
+    // 2) ./config/regexes.json (current directory)
+    // 3) package:ohmyg0sh/config/regexes.json (pub global / package install)
+    // 4) script-relative ../../config/regexes.json
+    final candidates = <String>[
+      '/app/config/regexes.json',
+      p.join(Directory.current.path, 'config', 'regexes.json'),
     ];
+
+    // Try package: URI resolution (works for pub global and direct runs)
+    try {
+      final pkgUri = await Isolate.resolvePackageUri(
+        Uri.parse('package:ohmyg0sh/config/regexes.json'),
+      );
+      if (pkgUri != null && pkgUri.scheme == 'file') {
+        candidates.add(p.normalize(pkgUri.toFilePath()));
+      }
+    } catch (_) {}
 
     // Try script-relative path
     try {
       final scriptDir = File(Platform.script.toFilePath()).parent;
-      candidates.add(p.normalize(
-          p.join(scriptDir.path, '..', '..', 'config', 'regexes.json')));
+      candidates.add(
+        p.normalize(
+            p.join(scriptDir.path, '..', '..', 'config', 'regexes.json')),
+      );
     } catch (_) {}
 
     for (final candidate in candidates) {
@@ -249,8 +262,9 @@ class OhMyG0sh {
     }
 
     throw Exception(
-        'regexes.json not found. Provide patternPath or ensure config/regexes.json exists.\n'
-        'Searched paths: ${candidates.join(", ")}');
+      'regexes.json not found. Provide patternPath or ensure config/regexes.json exists.\n'
+      'Searched paths: ${candidates.join(", ")}',
+    );
   }
 
   /// Load optional false-positive filters ('notkeyhacks').
@@ -266,16 +280,33 @@ class OhMyG0sh {
       return {};
     }
 
-    final candidates = [
-      '/app/config/notkeyhacks.json', // Docker path
-      p.join(
-          Directory.current.path, 'config', 'notkeyhacks.json'), // Current dir
+    // Resolution order mirrors patterns:
+    // 1) /app/config/notkeyhacks.json (Docker)
+    // 2) ./config/notkeyhacks.json (current directory)
+    // 3) package:ohmyg0sh/config/notkeyhacks.json (pub global / package install)
+    // 4) script-relative ../../config/notkeyhacks.json
+    final candidates = <String>[
+      '/app/config/notkeyhacks.json',
+      p.join(Directory.current.path, 'config', 'notkeyhacks.json'),
     ];
 
+    // Try package: URI resolution
+    try {
+      final pkgUri = await Isolate.resolvePackageUri(
+        Uri.parse('package:ohmyg0sh/config/notkeyhacks.json'),
+      );
+      if (pkgUri != null && pkgUri.scheme == 'file') {
+        candidates.add(p.normalize(pkgUri.toFilePath()));
+      }
+    } catch (_) {}
+
+    // Try script-relative path
     try {
       final scriptDir = File(Platform.script.toFilePath()).parent;
-      candidates.add(p.normalize(
-          p.join(scriptDir.path, '..', '..', 'config', 'notkeyhacks.json')));
+      candidates.add(
+        p.normalize(
+            p.join(scriptDir.path, '..', '..', 'config', 'notkeyhacks.json')),
+      );
     } catch (_) {}
 
     for (final candidate in candidates) {
