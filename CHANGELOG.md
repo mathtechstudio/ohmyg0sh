@@ -2,7 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.69.777] - 2025-10
+## [1.69.777+69] - 2025-10-07
+
+### Fixed
+
+- Resolve bundled configs via package: URIs for pub global installs ([OhMyG0sh._loadPatterns()](lib/src/ohmyg0sh_base.dart:218), [OhMyG0sh._loadNotKeyHacks()](lib/src/ohmyg0sh_base.dart:260))
+- Ship default patterns/filters with the package for global CLI ([lib/config/regexes.json](lib/config/regexes.json), [lib/config/notkeyhacks.json](lib/config/notkeyhacks.json))
+- README notes for output file naming and config resolution ([README.md](README.md:87), [README.md](README.md:276))
+
+### Chore
+
+- Bump version to 1.69.777+69 ([pubspec.yaml](pubspec.yaml:3))
+- Add .pubignore and ensure CHANGELOG.md is included ([.pubignore](.pubignore:18))
+- Ignore RELEASE_STEP.md in VCS ([.gitignore](.gitignore:9))
+
+### Docs
+
+- Standardize doc comments across library, CLI, core engine, scanner, example, and tests
+
+## [1.69.777] - 2025-10-07
 
 ## Added
 

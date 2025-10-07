@@ -1,6 +1,6 @@
 name: ohmyg0sh
 description: APK security scanner that detects hardcoded API keys and credentials before they reach production.
-version: 1.69.777
+version: 1.69.777+69
 repository: https://github.com/mathtechstudio/ohmyg0sh
 issue_tracker: https://github.com/mathtechstudio/ohmyg0sh/issues
 homepage: https://github.com/mathtechstudio/ohmyg0sh
