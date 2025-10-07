@@ -90,6 +90,15 @@ JSON output:
 ohmyg0sh -f file.apk --json -o results.json
 ```
 
+Note:
+
+- If your output file name begins with a dash (-), ensure it is not parsed as an option by using either form:
+
+```bash
+ohmyg0sh -f file.apk --json --output=-results.json
+ohmyg0sh -f file.apk --json -o ./-results.json
+```
+
 Custom patterns:
 
 ```bash
@@ -278,9 +287,10 @@ ohmyg0sh -f file.apk -a "--log-level DEBUG"
 The tool searches for patterns in:
 
 1. Custom path (if `-p` specified)
-2. `/app/config/regexes.json` (Docker)
-3. `./config/regexes.json` (current directory)
-4. Relative to package location
+2. `/app/config/regexes.json` (Docker image)
+3. `package:ohmyg0sh/config/regexes.json` (bundled with the package)
+4. `./config/regexes.json` (current working directory)
+5. Script-relative fallback near the executable
 
 ## Docker Usage
 
