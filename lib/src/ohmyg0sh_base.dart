@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'package:path/path.dart' as p;
 
 /// OhMyG0sh core engine.
@@ -26,6 +27,7 @@ class OhMyG0sh {
   final String? notKeyHacksPath;
   final String? jadxPath;
   final bool continueOnJadxError;
+  final int scanConcurrency;
   late final Directory _tmpDir;
   final Map<String, Set<String>> _results = {};
   String? _packageName;
@@ -44,6 +46,7 @@ class OhMyG0sh {
   /// - [notKeyHacksPath] Path to optional filters JSON to reduce false positives.
   /// - [jadxPath] Path to JADX binary. If null, resolves via PATH.
   /// - [continueOnJadxError] Continue scanning when JADX exits non-zero but artifacts exist (default: true).
+  /// - [scanConcurrency] Maximum concurrent file scans (default: 32).
   OhMyG0sh({
     required this.apkPath,
     this.outputJson = true,
@@ -52,6 +55,7 @@ class OhMyG0sh {
     this.notKeyHacksPath,
     this.jadxPath,
     this.continueOnJadxError = true,
+    this.scanConcurrency = 16,
   });
 
   /// Create a temporary working directory used for decompilation and scanning.
@@ -346,21 +350,34 @@ class OhMyG0sh {
     }
     if (_patterns == null) throw Exception('Patterns not loaded');
 
-    final outDir = Directory(_tmpDir.path);
-    final futures = <Future>[];
-
-    await for (final entity
-        in outDir.list(recursive: true, followLinks: false)) {
-      if (entity is File) {
-        final ext = p.extension(entity.path).toLowerCase();
-        if (!['.java', '.xml', '.smali', '.kt', '.txt', '.js'].contains(ext)) {
-          continue;
+    // Enumerate files with BFS and non-recursive listing to avoid FD pressure
+    final files = <File>[];
+    final dirs = <Directory>[Directory(_tmpDir.path)];
+    while (dirs.isNotEmpty) {
+      final dir = dirs.removeLast();
+      try {
+        await for (final entity in dir.list(recursive: false, followLinks: false)) {
+          if (entity is Directory) {
+            dirs.add(entity);
+          } else if (entity is File) {
+            final ext = p.extension(entity.path).toLowerCase();
+            if (['.java', '.xml', '.smali', '.kt', '.txt', '.js'].contains(ext)) {
+              files.add(entity);
+            }
+          }
         }
-        futures.add(_scanFile(entity, _patterns!));
+      } catch (_) {
+        // Skip directories that can't be listed
       }
     }
 
-    await Future.wait(futures);
+    // Scan with bounded concurrency to avoid "Too many open files"
+    final int concurrency = scanConcurrency <= 0 ? 16 : scanConcurrency;
+    for (int i = 0; i < files.length; i += concurrency) {
+      final end = math.min(i + concurrency, files.length);
+      final slice = files.sublist(i, end);
+      await Future.wait(slice.map((f) => _scanFile(f, _patterns!)));
+    }
   }
 
   /// Scan a single file's content using the loaded [patterns].

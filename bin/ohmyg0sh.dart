@@ -5,7 +5,7 @@
 /// Usage:
 ///   ohmyg0sh -f <apk> [options]
 ///
-/// Flags:
+//// Flags:
 ///   -h, --help          Show help and usage
 ///   -v, --version       Show version banner
 ///       --no-banner     Hide ASCII banner on startup
@@ -16,6 +16,7 @@
 ///       --jadx         Path to jadx binary
 ///       --json         Save report as JSON (otherwise plaintext)
 ///   -n, --notkeys      Path to notkeyhacks.json filters
+///   -c, --concurrency  Max concurrent file scans (default 16)
 ///
 /// Exit codes:
 ///   0  Success
@@ -133,7 +134,11 @@ Future<void> main(List<String> argv) async {
         abbr: 'a', help: 'Disassembler arguments (quoted, space-separated)')
     ..addOption('jadx', help: 'Path to jadx binary')
     ..addFlag('json', help: 'Save as JSON format', negatable: false)
-    ..addOption('notkeys', abbr: 'n', help: 'Path to notkeyhacks.json');
+    ..addOption('notkeys', abbr: 'n', help: 'Path to notkeyhacks.json')
+    ..addOption('concurrency',
+        abbr: 'c',
+        help:
+            'Max concurrent file scans to avoid "Too many open files" (default 16)');
 
   ArgResults args;
   try {
@@ -185,6 +190,11 @@ Future<void> main(List<String> argv) async {
   final String? pattern = args['pattern'] as String?;
   final String? notkeys = args['notkeys'] as String?;
   final String? customJadx = args['jadx'] as String?;
+  final String? concArg = args['concurrency'] as String?;
+  final int conc = (() {
+    final v = int.tryParse(concArg ?? '');
+    return (v == null || v <= 0) ? 16 : v;
+  })();
 
   // Prompt-install if missing
   await _ensureJadxInstalledOrPrompt(customJadx);
@@ -203,6 +213,7 @@ Future<void> main(List<String> argv) async {
     patternPath: pattern,
     notKeyHacksPath: notkeys,
     jadxPath: customJadx,
+    scanConcurrency: conc,
     // continueOnJadxError defaults to true in _base
   );
 
