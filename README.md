@@ -294,12 +294,11 @@ dart test
 
 ## Acknowledments
 
-Thanks to everyone helping ohmyg0sh stay sharp:
+Since this tool includes some contributions, and I'm not an asshole, I'll publically thank the following users for their helps and resources:
 
 | Contributors |
 | ------------ |
 | [![Contributors](https://contrib.rocks/image?repo=mathtechstudio/ohmyg0sh)](https://github.com/mathtechstudio/ohmyg0sh/graphs/contributors) |
-| [Contributor usernames →](https://github.com/mathtechstudio/ohmyg0sh/graphs/contributors) |
 
 ## License
 
