@@ -306,7 +306,11 @@ Released under the MIT License - see the [MIT License](LICENSE) file for details
 
 ## Links
 
+<h1 align="center" </h1>
+
 - [GitHub](https://github.com/mathtechstudio/ohmyg0sh)
 - [Docker](https://hub.docker.com/r/mathtechstudio/ohmyg0sh)
 - [Issue Tracker](https://github.com/mathtechstudio/ohmyg0sh/issues)
 - [pub.dev Package](https://pub.dev/packages/ohmyg0sh)
+
+</div>
