@@ -1,7 +1,7 @@
 # ohmyg0sh
 
 ![Pub Version](https://img.shields.io/pub/v/ohmyg0sh)
-![Release CI](https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg?branch=main)
+![Release CI](https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-informational)
 
