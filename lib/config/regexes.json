@@ -58,5 +58,8 @@
 	"Twitter_Access_Token": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*[1-9][0-9]+-[0-9a-zA-Z]{40}",
 	"Twitter_ClientID": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R](.{0,20})?['\"][0-9a-z]{18,25}",
 	"Twitter_OAuth": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"]",
-	"Twitter_Secret_Key": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R](.{0,20})?['\"][0-9a-z]{35,44}"
+	"Twitter_Secret_Key": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R](.{0,20})?['\"][0-9a-z]{35,44}",
+	"Mapbox_Public_Token": "(?:pk\\.eyJ1Ijoi[\\w\\.-]+\\.[\\w\\.-]+\\.[\\w\\.-]+)",
+	"Mapbox_Secret_Token": "(?:sk\\.eyJ1Ijoi[\\w\\.-]+\\.[\\w\\.-]+\\.[\\w\\.-]+)",
+	"Supabase_API_Key": "(?:sb_(?:publishable|secret)_[A-Za-z0-9]{20,})"
 }

@@ -133,6 +133,53 @@ class OhMyG0sh {
 
     final stdoutBuf = StringBuffer();
     final stderrBuf = StringBuffer();
+    const errorMarker = 'ERROR - finished with errors';
+    final errorRegex =
+        RegExp(r'ERROR - finished with errors, count: \d+\r?\n?');
+    const carryLength = 64;
+    String stdoutCarry = '';
+    String stderrCarry = '';
+
+    void handleChunk(String data, {required bool isStdout}) {
+      final combined = (isStdout ? stdoutCarry : stderrCarry) + data;
+      final emitLength =
+          combined.length <= carryLength ? 0 : combined.length - carryLength;
+      final emitPortion = combined.substring(0, emitLength);
+      final sanitized = emitPortion.replaceAll(errorRegex, '');
+      if (sanitized.isNotEmpty) {
+        if (isStdout) {
+          stdout.write(sanitized);
+        } else {
+          stderr.write(sanitized);
+        }
+      }
+
+      final newCarry = combined.substring(emitLength);
+      if (isStdout) {
+        stdoutCarry = newCarry;
+      } else {
+        stderrCarry = newCarry;
+      }
+    }
+
+    void flushCarry({required bool isStdout}) {
+      final carry = isStdout ? stdoutCarry : stderrCarry;
+      if (carry.isNotEmpty) {
+        final sanitized = carry.replaceAll(errorRegex, '');
+        if (sanitized.isNotEmpty) {
+          if (isStdout) {
+            stdout.write(sanitized);
+          } else {
+            stderr.write(sanitized);
+          }
+        }
+      }
+      if (isStdout) {
+        stdoutCarry = '';
+      } else {
+        stderrCarry = '';
+      }
+    }
 
     final proc = await Process.start(
       args.first,
@@ -141,17 +188,22 @@ class OhMyG0sh {
       mode: ProcessStartMode.normal,
     );
 
-    // Stream logs to console while also capturing to buffers
     proc.stdout.transform(utf8.decoder).listen((data) {
-      stdout.write(data);
       stdoutBuf.write(data);
+      handleChunk(data, isStdout: true);
     });
     proc.stderr.transform(utf8.decoder).listen((data) {
-      stderr.write(data);
       stderrBuf.write(data);
+      handleChunk(data, isStdout: false);
     });
 
     final exitCode = await proc.exitCode;
+    flushCarry(isStdout: true);
+    flushCarry(isStdout: false);
+
+    final sawFinishedErrorsLine = continueOnJadxError &&
+        (stdoutBuf.toString().contains(errorMarker) ||
+            stderrBuf.toString().contains(errorMarker));
 
     // Persist logs for troubleshooting
     try {
@@ -202,8 +254,11 @@ class OhMyG0sh {
       } catch (_) {}
 
       if (continueOnJadxError && hasArtifacts) {
+        final prefix = sawFinishedErrorsLine
+            ? 'JADX reported recoverable issues (error line suppressed).'
+            : 'jadx exited with code $exitCode.';
         stderr.writeln(
-            'Warning: jadx exited with code $exitCode, but decompiled artifacts were found under $outDir. Continuing. See logs: $outDir/jadx_stdout.log, $outDir/jadx_stderr.log');
+            'Warning: $prefix Continuing because usable artifacts were produced in $outDir. See logs: $outDir/jadx_stdout.log, $outDir/jadx_stderr.log');
         return;
       }
       throw Exception(
@@ -356,12 +411,14 @@ class OhMyG0sh {
     while (dirs.isNotEmpty) {
       final dir = dirs.removeLast();
       try {
-        await for (final entity in dir.list(recursive: false, followLinks: false)) {
+        await for (final entity
+            in dir.list(recursive: false, followLinks: false)) {
           if (entity is Directory) {
             dirs.add(entity);
           } else if (entity is File) {
             final ext = p.extension(entity.path).toLowerCase();
-            if (['.java', '.xml', '.smali', '.kt', '.txt', '.js'].contains(ext)) {
+            if (['.java', '.xml', '.smali', '.kt', '.txt', '.js']
+                .contains(ext)) {
               files.add(entity);
             }
           }
@@ -407,16 +464,20 @@ class OhMyG0sh {
   /// Attempts compilation with multi-line and dot-all first, then falls back.
   /// Adds unique matches to [_results] unless excluded by [_isFiltered].
   void _applyPattern(String name, String patternString, String content) {
-    RegExp re;
-    try {
-      re = RegExp(patternString, multiLine: true, dotAll: true);
-    } catch (_) {
+    RegExp? tryCompile({bool multiLine = true, bool dotAll = false}) {
       try {
-        re = RegExp(patternString);
-      } catch (e) {
-        // invalid pattern skip
-        return;
+        return RegExp(patternString, multiLine: multiLine, dotAll: dotAll);
+      } catch (_) {
+        return null;
       }
+    }
+
+    RegExp? re = tryCompile();
+    re ??= tryCompile(dotAll: true);
+    re ??= tryCompile(multiLine: false);
+    re ??= tryCompile(multiLine: false, dotAll: true);
+    if (re == null) {
+      return;
     }
 
     for (final m in re.allMatches(content)) {
@@ -439,36 +500,45 @@ class OhMyG0sh {
 
     // common patterns in notkeyhacks: specific regexes or substrings to ignore
     // support two keys: "patterns" (list of regex) and "contains" (list of substrings)
+    bool matchesRegex(dynamic value) {
+      if (value is List) {
+        for (final item in value) {
+          if (matchesRegex(item)) return true;
+        }
+        return false;
+      }
+      if (value is String) {
+        try {
+          final re = RegExp(value, multiLine: true);
+          if (re.hasMatch(matchStr) || re.hasMatch(fileContent)) return true;
+        } catch (_) {}
+      }
+      return false;
+    }
+
+    bool containsSubstring(dynamic value) {
+      if (value is List) {
+        for (final item in value) {
+          if (containsSubstring(item)) return true;
+        }
+        return false;
+      }
+      if (value is String) {
+        final sub = value;
+        if (matchStr.contains(sub) || fileContent.contains(sub)) return true;
+      }
+      return false;
+    }
+
     try {
       if (_notkeyhacks!.containsKey('patterns')) {
-        final List patterns = _notkeyhacks!['patterns'] as List;
-        for (final p in patterns) {
-          try {
-            final re = RegExp(p.toString(), multiLine: true);
-            if (re.hasMatch(matchStr) || re.hasMatch(fileContent)) return true;
-          } catch (_) {}
-        }
+        if (matchesRegex(_notkeyhacks!['patterns'])) return true;
       }
       if (_notkeyhacks!.containsKey('contains')) {
-        final List contains = _notkeyhacks!['contains'] as List;
-        for (final s in contains) {
-          final sub = s.toString();
-          if (matchStr.contains(sub) || fileContent.contains(sub)) return true;
-        }
+        if (containsSubstring(_notkeyhacks!['contains'])) return true;
       }
-      // also support per-key whitelist: key names mapping to list of patterns to ignore
       if (_notkeyhacks!.containsKey(name)) {
-        final entry = _notkeyhacks![name];
-        if (entry is List) {
-          for (final p in entry) {
-            try {
-              final re = RegExp(p.toString(), multiLine: true);
-              if (re.hasMatch(matchStr) || re.hasMatch(fileContent)) {
-                return true;
-              }
-            } catch (_) {}
-          }
-        }
+        if (matchesRegex(_notkeyhacks![name])) return true;
       }
     } catch (_) {}
 
@@ -500,6 +570,9 @@ class OhMyG0sh {
   /// Prints the final path to console.
   Future<void> generateReport({String? outPath}) async {
     final now = DateTime.now().toIso8601String();
+    const generatedBy = 'ohmyg0sh';
+    const repositoryUrl = 'https://github.com/mathtechstudio/ohmyg0sh';
+    const pubDevUrl = 'https://pub.dev/packages/ohmyg0sh';
 
     final path =
         outPath ?? outputFile ?? (outputJson ? 'results.json' : 'results.txt');
@@ -513,10 +586,18 @@ class OhMyG0sh {
             .map((e) => {'name': e.key, 'matches': e.value.toList()})
             .toList(),
         'generated_at': now,
+        'generated_by': generatedBy,
+        'repository': repositoryUrl,
+        'pub_dev': pubDevUrl,
       };
       await file.writeAsString(JsonEncoder.withIndent('  ').convert(out));
     } else {
       final buf = StringBuffer();
+      buf.writeln('generate at :: $now');
+      buf.writeln('generate by :: **$generatedBy**');
+      buf.writeln('repository :: $repositoryUrl');
+      buf.writeln('pub.dev :: $pubDevUrl');
+      buf.writeln();
       buf.writeln("** Scanning against '${_packageName ?? ''}'");
       final keys = _results.keys.toList()..sort();
       for (final name in keys) {

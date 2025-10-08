@@ -3,7 +3,7 @@
 /// Provides a command-line interface to scan Android APKs for hardcoded secrets.
 ///
 /// Usage:
-///   ohmyg0sh -f <apk> [options]
+///   ohmyg0sh -f &lt;apk&gt; [options]
 ///
 //// Flags:
 ///   -h, --help          Show help and usage
