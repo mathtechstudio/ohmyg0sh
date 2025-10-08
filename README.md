@@ -1,11 +1,11 @@
 # ohmyg0sh
 
-![version](https://img.shields.io/pub/v/ohmyg0sh)
-![CI](https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg?branch=main)
+![Pub Version](https://img.shields.io/pub/v/ohmyg0sh)
+![Release CI](https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg?branch=main)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-informational)
 
-OhMyG0sh is an APK security scanner that decompiles packages with `jadx`, applies a curated library of credential and secret patterns, filters false positives, and produces text or JSON reports.
+ohmyg0sh is an APK security scanner that decompiles packages with `jadx`, applies a curated library of credential and secret patterns, filters false positives, and produces text or JSON reports.
 
 ## Table of Contents
 
@@ -38,6 +38,7 @@ OhMyG0sh is an APK security scanner that decompiles packages with `jadx`, applie
   - [Development](#development)
   - [Contributing](#contributing)
   - [Security Notes](#security-notes)
+  - [Acknowledments](#acknowledments)
   - [License](#license)
   - [Links](#links)
 
@@ -79,7 +80,7 @@ docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /
 
 ## Requirements
 
-- **Dart SDK** ^3.5.4
+- **Dart SDK** ^3.5
 - **Java** 11 or newer (required by `jadx`)
 - **jadx** installed and available on `PATH`, or passed with `--jadx`
 
@@ -132,10 +133,12 @@ Future<void> main() async {
 ### Custom Patterns (`regexes.json`)
 
 ```json
+// your-fucking-rules.json
 {
   "Google_API_Key": "AIza[0-9A-Za-z\\-_]{35}",
   "AWS_Access_Key": "AKIA[0-9A-Z]{16}",
   "Custom_Token": "myapp_[a-f0-9]{32}"
+  // ...
 }
 ```
 
@@ -289,13 +292,22 @@ dart test
 - Rotate exposed credentials immediately
 - Report vulnerabilities responsibly
 
+## Acknowledments
+
+Thanks to everyone helping ohmyg0sh stay sharp:
+
+| Contributors |
+| ------------ |
+| [![Contributors](https://contrib.rocks/image?repo=mathtechstudio/ohmyg0sh)](https://github.com/mathtechstudio/ohmyg0sh/graphs/contributors) |
+| [Contributor usernames →](https://github.com/mathtechstudio/ohmyg0sh/graphs/contributors) |
+
 ## License
 
-Released under the [MIT License](LICENSE).
+Released under the MIT License - see the [MIT License](LICENSE) file for details.
 
 ## Links
 
-- [GitHub Repository](https://github.com/mathtechstudio/ohmyg0sh)
-- [Docker Hub](https://hub.docker.com/r/mathtechstudio/ohmyg0sh)
+- [GitHub](https://github.com/mathtechstudio/ohmyg0sh)
+- [Docker](https://hub.docker.com/r/mathtechstudio/ohmyg0sh)
 - [Issue Tracker](https://github.com/mathtechstudio/ohmyg0sh/issues)
 - [pub.dev Package](https://pub.dev/packages/ohmyg0sh)
