@@ -1,119 +1,117 @@
-# ohmyg0.sh
+# ohmyg0sh
 
-APK security scanner that detects hardcoded API keys and credentials before they reach production. Decompiles APKs with jadx and scans for exposed secrets using configurable regex patterns.
+![version](https://img.shields.io/pub/v/ohmyg0sh)
+![CI](https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg?branch=main)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-informational)
+
+OhMyG0sh is an APK security scanner that decompiles packages with `jadx`, applies a curated library of credential and secret patterns, filters false positives, and produces text or JSON reports.
+
+## Table of Contents
+
+- [ohmyg0sh](#ohmyg0sh)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+    - [Global CLI (Recommended)](#global-cli-recommended)
+    - [Project Dependency](#project-dependency)
+    - [Docker](#docker)
+  - [Requirements](#requirements)
+    - [Installing jadx](#installing-jadx)
+  - [Quick Start](#quick-start)
+    - [CLI](#cli)
+    - [Programmatic API](#programmatic-api)
+  - [Configuration](#configuration)
+    - [Custom Patterns (`regexes.json`)](#custom-patterns-regexesjson)
+    - [False Positive Filters (`notkeyhacks.json`)](#false-positive-filters-notkeyhacksjson)
+  - [Built-in Patterns](#built-in-patterns)
+  - [Output Examples](#output-examples)
+    - [Text](#text)
+    - [JSON](#json)
+  - [CLI Reference](#cli-reference)
+  - [How It Works](#how-it-works)
+  - [Troubleshooting](#troubleshooting)
+    - [`jadx` Not Found](#jadx-not-found)
+    - [`jadx` Exits with Errors](#jadx-exits-with-errors)
+    - [Custom Pattern Resolution](#custom-pattern-resolution)
+  - [Docker Usage](#docker-usage)
+  - [Development](#development)
+  - [Contributing](#contributing)
+  - [Security Notes](#security-notes)
+  - [License](#license)
+  - [Links](#links)
 
 ## Features
 
-- Scan Android APKs for hardcoded credentials
-- 50+ built-in patterns for common API keys and secrets
-- Configurable detection rules and false-positive filters
-- JSON and text output formats
-- CLI tool or programmatic API
-- Docker🐳 support for easy deployment
+- Scan Android APKs for hardcoded credentials before release
+- 50+ bundled regex patterns covering major cloud, social, payment, and developer platforms
+- Customizable detection rules and false-positive filters
+- Human-readable text reports and machine-friendly JSON output
+- Streamed CLI updates with noisy jadx error lines suppressed
+- Programmatic API and Docker image for automation pipelines
 
 ## Installation
 
-### Option 1: Global CLI Tool (Recommended)
-
-Activate globally to use `ohmyg0sh` command anywhere:
+### Global CLI (Recommended)
 
 ```bash
 dart pub global activate ohmyg0sh
+ohmyg0sh -f app-release.apk
 ```
 
-After activation, run directly:
-
-```bash
-ohmyg0sh -f file.apk
-ohmyg0sh -f file.apk --json -o results.json
-```
-
-### Option 2: As Dependency
-
-Add to your `pubspec.yaml`:
+### Project Dependency
 
 ```yaml
 dependencies:
-  ohmyg0sh: ^1.69.777+69
+  ohmyg0sh: ^1.70.0
 ```
-
-Then install:
 
 ```bash
 dart pub get
 ```
 
-### Option 3: Docker
-
-Pull from Docker Hub:
+### Docker
 
 ```bash
 docker pull mathtechstudio/ohmyg0sh:latest
-```
-
-Run:
-
-```bash
-docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/file.apk
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/app-release.apk
 ```
 
 ## Requirements
 
-- **Dart SDK**: ^3.5.4
-- **Java**: 11+ (for jadx decompiler)
-- **jadx**: Must be installed and in PATH (or specify `--jadx` flag)
+- **Dart SDK** ^3.5.4
+- **Java** 11 or newer (required by `jadx`)
+- **jadx** installed and available on `PATH`, or passed with `--jadx`
 
 ### Installing jadx
 
-**macOS (Homebrew):**
-
 ```bash
+# macOS
 brew install jadx
-```
 
-**Linux/Windows:**
-Download from [jadx releases](https://github.com/skylot/jadx/releases) and add to PATH.
+# Linux / Windows
+# Download from https://github.com/skylot/jadx/releases and add the binary to PATH
+```
 
 ## Quick Start
 
-### CLI Usage
-
-Basic scan:
+### CLI
 
 ```bash
-ohmyg0sh -f file.apk
+# Basic scan
+ohmyg0sh -f app-release.apk
+
+# JSON results
+ohmyg0sh -f app-release.apk --json -o results.json
+
+# Custom patterns & extra jadx flags
+ohmyg0sh -f app-release.apk -p custom/regexes.json -a "--deobf --log-level INFO"
 ```
 
-JSON output:
-
-```bash
-ohmyg0sh -f file.apk --json -o results.json
-```
-
-Note:
-
-- If your output file name begins with a dash (-), ensure it is not parsed as an option by using either form:
-
-```bash
-ohmyg0sh -f file.apk --json --output=-results.json
-ohmyg0sh -f file.apk --json -o ./-results.json
-```
-
-Custom patterns:
-
-```bash
-ohmyg0sh -f file.apk -p custom-patterns.json
-```
-
-With jadx options:
-
-```bash
-ohmyg0sh -f file.apk -a "--deobf --log-level DEBUG"
-```
+> [!TIP]
+> If your output file name starts with `-`, provide the path as `--output=./-results.json` to avoid option parsing issues.
 
 ### Programmatic API
-
-Use as a library in your Dart projects:
 
 ```dart
 import 'package:ohmyg0sh/ohmyg0sh.dart';
@@ -125,49 +123,13 @@ Future<void> main() async {
     outputFile: 'results.json',
   );
 
-  try {
-    await scanner.run();
-  } catch (e) {
-    print('Scan failed: $e');
-    await scanner.cleanup();
-  }
+  await scanner.run();
 }
 ```
 
-Advanced usage with custom configuration:
-
-```dart
-final scanner = OhMyG0sh(
-  apkPath: './app.apk',
-  outputJson: true,
-  outputFile: 'scan-results.json',
-  patternPath: './custom-patterns.json',
-  notKeyHacksPath: './custom-filters.json',
-  jadxPath: '/usr/local/bin/jadx',
-  continueOnJadxError: true,
-);
-
-await scanner.run(jadxExtraArgs: ['--deobf', '--show-bad-code']);
-```
-
-## CLI Options
-
-| Option      | Short | Description                                  |
-| ----------- | ----- | -------------------------------------------- |
-| `--file`    | `-f`  | APK file to scan (required)                  |
-| `--output`  | `-o`  | Output file path (auto-generated if not set) |
-| `--json`    |       | Save results as JSON                         |
-| `--pattern` | `-p`  | Custom regex patterns JSON file              |
-| `--notkeys` | `-n`  | False-positive filters JSON file             |
-| `--jadx`    |       | Path to jadx binary                          |
-| `--args`    | `-a`  | Additional jadx arguments (quoted)           |
-| `--help`    | `-h`  | Show help message                            |
-
 ## Configuration
 
-### Custom Patterns
-
-Create a JSON file with your detection patterns:
+### Custom Patterns (`regexes.json`)
 
 ```json
 {
@@ -177,55 +139,46 @@ Create a JSON file with your detection patterns:
 }
 ```
 
-Use with:
+Use via `ohmyg0sh -f app.apk -p my-patterns.json`.
 
-```bash
-ohmyg0sh -f file.apk -p my-patterns.json
-```
-
-### False Positive Filters
-
-Create `notkeyhacks.json` to filter out known false positives:
+### False Positive Filters (`notkeyhacks.json`)
 
 ```json
 {
-  "patterns": ["example\\.com", "test_key"],
-  "contains": ["YOUR_API_KEY", "PLACEHOLDER"],
+  "patterns": ["example\\.com"],
+  "contains": ["PLACEHOLDER"],
   "Google_API_Key": ["AIzaGRAPHIC_DESIGN"]
 }
 ```
 
+Use via `ohmyg0sh -f app.apk -n my-filters.json`.
+
 ## Built-in Patterns
 
-The package includes 50+ detection patterns for:
+Bundled rules detect secrets across:
 
-- **Cloud Services**: AWS, Google Cloud, Azure, DigitalOcean
-- **Social Media**: Facebook, Twitter, LinkedIn, Slack
-- **Payment**: Stripe, PayPal, Square, Braintree
-- **Development**: GitHub, GitLab, NPM, PyPI
-- **Databases**: MongoDB, PostgreSQL, MySQL
-- **And many more...**
+- **Cloud**: AWS, Google Cloud, Azure, DigitalOcean
+- **Social & Comms**: Facebook, Twitter, Slack, Discord
+- **Payments**: Stripe, PayPal, Square, Braintree
+- **Developer Services**: GitHub, GitLab, Mailgun, Cloudinary
+- **Databases & Keys**: MongoDB, Postgres, private key blocks
 
-See [config/regexes.json](https://github.com/mathtechstudio/ohmyg0sh/blob/main/config/regexes.json) for the complete list.
+Review the full list in [config/regexes.json](config/regexes.json).
 
 ## Output Examples
 
-### Text Format
+### Text
 
 ```bash
 ** Scanning against 'com.example.app'
 
 [Google_API_Key]
 - AIzaSyD...
-- AIzaSyE...
-
-[AWS_Access_Key]
-- AKIAIOSFODNN7EXAMPLE
 
 ** Results saved into 'results_1234567890.txt'.
 ```
 
-### JSON Format
+### JSON
 
 ```json
 {
@@ -233,75 +186,72 @@ See [config/regexes.json](https://github.com/mathtechstudio/ohmyg0sh/blob/main/c
   "results": [
     {
       "name": "Google_API_Key",
-      "matches": ["AIzaSyD...", "AIzaSyE..."]
-    },
-    {
-      "name": "AWS_Access_Key",
-      "matches": ["AKIAIOSFODNN7EXAMPLE"]
+      "matches": ["AIzaSyD..."]
     }
   ],
-  "generated_at": "2025-10-07T14:00:00Z"
+  "generated_at": "2025-10-07T14:00:00Z",
+  "generated_by": "ohmyg0sh",
+  "repository": "https://github.com/mathtechstudio/ohmyg0sh",
+  "pub_dev": "https://pub.dev/packages/ohmyg0sh"
 }
 ```
 
+## CLI Reference
+
+| Option      | Short | Description                                  |
+| ----------- | ----- | -------------------------------------------- |
+| `--file`    | `-f`  | APK file to scan (required)                  |
+| `--output`  | `-o`  | Output file path (auto-generated if missing) |
+| `--json`    |       | Emit JSON instead of text                    |
+| `--pattern` | `-p`  | Custom `regexes.json` file                   |
+| `--notkeys` | `-n`  | Custom `notkeyhacks.json` file               |
+| `--jadx`    |       | Explicit path to the `jadx` binary           |
+| `--args`    | `-a`  | Additional `jadx` arguments (quoted)         |
+| `--help`    | `-h`  | Show usage                                   |
+
 ## How It Works
 
-1. **Decompile**: APK is decompiled using jadx
-2. **Extract**: Package name from AndroidManifest.xml
-3. **Scan**: Java, Kotlin, Smali, XML, JS, and TXT files
-4. **Match**: Apply regex patterns to file contents
-5. **Filter**: Remove false positives using notkeyhacks rules
-6. **Report**: Group findings and save results
+1. **Decompile** APK with `jadx`
+2. **Extract** package metadata
+3. **Scan** Java, Kotlin, Smali, XML, JS, and TXT sources
+4. **Match** regex patterns against file contents
+5. **Filter** via `notkeyhacks` rules
+6. **Report** grouped matches to disk in the requested format
 
 ## Troubleshooting
 
-### jadx not found
-
-Install jadx and ensure it's in your PATH:
+### `jadx` Not Found
 
 ```bash
-# macOS
-brew install jadx
-
-# Verify
-which jadx
-jadx --version
+brew install jadx       # macOS
+which jadx && jadx --version
 ```
 
-Or specify custom path:
+Or run with `--jadx /custom/path/to/jadx`.
+
+### `jadx` Exits with Errors
+
+OhMyG0sh continues when usable artifacts exist and suppresses the noisy `ERROR - finished with errors` line. For verbose logs use:
 
 ```bash
-ohmyg0sh -f file.apk --jadx /path/to/jadx
+ohmyg0sh -f app.apk -a "--log-level DEBUG"
 ```
 
-### jadx exits with error
+### Custom Pattern Resolution
 
-The tool continues if artifacts are found. Enable detailed logging:
+Search order:
 
-```bash
-ohmyg0sh -f file.apk -a "--log-level DEBUG"
-```
-
-### Pattern file not found
-
-The tool searches for patterns in:
-
-1. Custom path (if `-p` specified)
+1. `--pattern` path (if provided)
 2. `/app/config/regexes.json` (Docker image)
-3. `package:ohmyg0sh/config/regexes.json` (bundled with the package)
-4. `./config/regexes.json` (current working directory)
-5. Script-relative fallback near the executable
+3. `package:ohmyg0sh/config/regexes.json` (pub install)
+4. `./config/regexes.json`
+5. Executable-relative fallback
 
 ## Docker Usage
 
-Create alias for convenience:
-
 ```bash
-# macOS/Linux
 alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest'
-
-# Then use like:
-ohmyg0sh -f file.apk
+ohmyg0sh -f app-release.apk
 ```
 
 With custom patterns:
@@ -312,56 +262,40 @@ docker run -it --rm \
   -v "$PWD/patterns.json":/patterns.json \
   -w /work \
   mathtechstudio/ohmyg0sh:latest \
-  -f /work/file.apk -p /patterns.json
+  -f /work/app.apk -p /patterns.json
 ```
 
 ## Development
-
-Clone and setup:
 
 ```bash
 git clone https://github.com/mathtechstudio/ohmyg0sh.git
 cd ohmyg0sh
 dart pub get
-```
-
-Run locally:
-
-```bash
-dart run bin/ohmyg0sh.dart -f test.apk
-```
-
-Run tests:
-
-```bash
+dart run bin/ohmyg0sh.dart -f app-release.apk
 dart test
 ```
 
 ## Contributing
 
-Contributions are welcome! Please:
-
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+3. Implement and test your changes
+4. Submit a pull request
 
 ## Security Notes
 
-- For security research and auditing only
-- Always obtain authorization before scanning
-- Verify findings manually (false positives possible)
+- Use only on APKs you are authorized to assess
+- Review findings manually to confirm leaks
 - Rotate exposed credentials immediately
 - Report vulnerabilities responsibly
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
+Released under the [MIT License](LICENSE).
 
 ## Links
 
 - [GitHub Repository](https://github.com/mathtechstudio/ohmyg0sh)
 - [Docker Hub](https://hub.docker.com/r/mathtechstudio/ohmyg0sh)
 - [Issue Tracker](https://github.com/mathtechstudio/ohmyg0sh/issues)
-- [pub.dev](https://pub.dev/packages/ohmyg0sh)
+- [pub.dev Package](https://pub.dev/packages/ohmyg0sh)
