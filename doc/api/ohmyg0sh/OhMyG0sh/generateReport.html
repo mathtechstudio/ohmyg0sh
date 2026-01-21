@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the generateReport method from the OhMyG0sh class, for the Dart programming language.">
+  <title>generateReport method - OhMyG0sh class - ohmyg0sh library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">ohmyg0sh</a></li>
+    <li><a href="../../ohmyg0sh/">ohmyg0sh.dart</a></li>
+    <li><a href="../../ohmyg0sh/OhMyG0sh-class.html">OhMyG0sh</a></li>
+    <li class="self-crumb">generateReport method</li>
+  </ol>
+  <div class="self-name">generateReport</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="ohmyg0sh&#47;OhMyG0sh-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">generateReport</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="https://api.dart.dev/stable/3.8.1/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
+<span class="name ">generateReport</span>(<wbr>{<ol class="parameter-list"> <li><span class="parameter" id="generateReport-param-outPath"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.8.1/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outPath</span>, </span></li>
+</ol>})
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Write scan results to a report file.</p>
+<p>When <a href="../../ohmyg0sh/OhMyG0sh/outputJson.html">outputJson</a> is true, writes a formatted JSON containing 'package',
+'results', and 'generated_at'. Otherwise writes plaintext sections.</p>
+<p>Parameters:</p>
+<ul>
+<li><code>outPath</code> Optional explicit path; falls back to <a href="../../ohmyg0sh/OhMyG0sh/outputFile.html">outputFile</a> or defaults.</li>
+</ul>
+<p>Prints the final path to console.</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">Future&lt;void&gt; generateReport({String? outPath}) async {
+  final now = DateTime.now().toIso8601String();
+  const generatedBy = &#39;ohmyg0sh&#39;;
+  const repositoryUrl = &#39;https:&#47;&#47;github.com&#47;mathtechstudio&#47;ohmyg0sh&#39;;
+  const pubDevUrl = &#39;https:&#47;&#47;pub.dev&#47;packages&#47;ohmyg0sh&#39;;
+
+  final path =
+      outPath ?? outputFile ?? (outputJson ? &#39;results.json&#39; : &#39;results.txt&#39;);
+
+  final file = File(path);
+
+  if (outputJson) {
+    final out = {
+      &#39;package&#39;: _packageName ?? &#39;&#39;,
+      &#39;results&#39;: _results.entries
+          .map((e) =&gt; {&#39;name&#39;: e.key, &#39;matches&#39;: e.value.toList()})
+          .toList(),
+      &#39;generated_at&#39;: now,
+      &#39;generated_by&#39;: generatedBy,
+      &#39;repository&#39;: repositoryUrl,
+      &#39;pub_dev&#39;: pubDevUrl,
+    };
+    await file.writeAsString(JsonEncoder.withIndent(&#39;  &#39;).convert(out));
+  } else {
+    final buf = StringBuffer();
+    buf.writeln(&#39;generate at :: $now&#39;);
+    buf.writeln(&#39;generate by :: **$generatedBy**&#39;);
+    buf.writeln(&#39;repository :: $repositoryUrl&#39;);
+    buf.writeln(&#39;pub.dev :: $pubDevUrl&#39;);
+    buf.writeln();
+    buf.writeln(&quot;** Scanning against &#39;${_packageName ?? &#39;&#39;}&#39;&quot;);
+    final keys = _results.keys.toList()..sort();
+    for (final name in keys) {
+      buf.writeln();
+      buf.writeln(&#39;[$name]&#39;);
+      final matches = _results[name]!.toList()..sort();
+      for (final m in matches) {
+        buf.writeln(&#39;- $m&#39;);
+      }
+    }
+    await file.writeAsString(buf.toString());
+  }
+
+  print(&quot;** Results saved into &#39;$path&#39;.&quot;);
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">ohmyg0sh</a></li>
+    <li><a href="../../ohmyg0sh/">ohmyg0sh</a></li>
+    <li><a href="../../ohmyg0sh/OhMyG0sh-class.html">OhMyG0sh</a></li>
+    <li class="self-crumb">generateReport method</li>
+</ol>
+
+    <h5>OhMyG0sh class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    ohmyg0sh
+      1.70.0
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

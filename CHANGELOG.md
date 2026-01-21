@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.71.1] - 2026-01-22
+
+### Fixed
+
+- JSON_Web_Token regex pattern compilation error that caused repeated warnings during scans
+- Updated pattern to use standard JWT format detection: `eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*`
+
 ## [1.71.0] - 2026-01-22
 
 ### Added

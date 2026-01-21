@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="ohmyg0sh API docs, for the Dart programming language.">
+  <title>ohmyg0sh - Dart API docs</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="static-assets/github.css?v1">
+  <link rel="stylesheet" href="static-assets/styles.css?v1">
+  <link rel="icon" href="static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="https://github.com/mathtechstudio/ohmyg0sh">ohmyg0sh package</a></li>
+  </ol>
+  <div class="self-name">ohmyg0sh</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div id="dartdoc-main-content" class="main-content">
+      
+<section class="desc markdown">
+  <h1 id="ohmyg0sh">ohmyg0sh</h1>
+<p><img src="https://img.shields.io/pub/v/ohmyg0sh" alt="Pub Version">
+<img src="https://github.com/mathtechstudio/ohmyg0sh/actions/workflows/release.yml/badge.svg" alt="Release CI">
+<img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+<img src="https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-informational" alt="Platforms"></p>
+<p>ohmyg0sh is an APK security scanner that decompiles packages with <code>jadx</code>, applies a curated library of credential and secret patterns, filters false positives, and produces text or JSON reports.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#ohmyg0sh">ohmyg0sh</a>
+<ul>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#installation">Installation</a>
+<ul>
+<li><a href="#global-cli-recommended">Global CLI (Recommended)</a></li>
+<li><a href="#project-dependency">Project Dependency</a></li>
+<li><a href="#docker">Docker</a></li>
+</ul>
+</li>
+<li><a href="#requirements">Requirements</a>
+<ul>
+<li><a href="#installing-jadx">Installing jadx</a></li>
+</ul>
+</li>
+<li><a href="#quick-start">Quick Start</a>
+<ul>
+<li><a href="#cli">CLI</a></li>
+<li><a href="#programmatic-api">Programmatic API</a></li>
+</ul>
+</li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#custom-patterns-regexesjson">Custom Patterns (<code>regexes.json</code>)</a></li>
+<li><a href="#false-positive-filters-notkeyhacksjson">False Positive Filters (<code>notkeyhacks.json</code>)</a></li>
+</ul>
+</li>
+<li><a href="#built-in-patterns">Built-in Patterns</a></li>
+<li><a href="#output-examples">Output Examples</a>
+<ul>
+<li><a href="#text">Text</a></li>
+<li><a href="#json">JSON</a></li>
+</ul>
+</li>
+<li><a href="#cli-reference">CLI Reference</a></li>
+<li><a href="#how-it-works">How It Works</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a>
+<ul>
+<li><a href="#jadx-not-found"><code>jadx</code> Not Found</a></li>
+<li><a href="#jadx-exits-with-errors"><code>jadx</code> Exits with Errors</a></li>
+<li><a href="#custom-pattern-resolution">Custom Pattern Resolution</a></li>
+</ul>
+</li>
+<li><a href="#docker-usage">Docker Usage</a></li>
+<li><a href="#development">Development</a></li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#security-notes">Security Notes</a></li>
+<li><a href="#acknowledments">Acknowledments</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="features">Features</h2>
+<ul>
+<li>Scan Android APKs for hardcoded credentials before release</li>
+<li>50+ bundled regex patterns covering major cloud, social, payment, and developer platforms</li>
+<li>Customizable detection rules and false-positive filters</li>
+<li>Human-readable text reports and machine-friendly JSON output</li>
+<li>Streamed CLI updates with noisy jadx error lines suppressed</li>
+<li>Programmatic API and Docker image for automation pipelines</li>
+</ul>
+<h2 id="installation">Installation</h2>
+<h3 id="global-cli-recommended">Global CLI (Recommended)</h3>
+<pre class="language-bash"><code class="language-bash">dart pub global activate ohmyg0sh
+
+# then
+ohmyg0sh -f app-release.apk
+</code></pre>
+<h3 id="project-dependency">Project Dependency</h3>
+<pre class="language-yaml"><code class="language-yaml">dependencies:
+  ohmyg0sh: ^1.70.0
+</code></pre>
+<pre class="language-bash"><code class="language-bash">dart pub get
+</code></pre>
+<h3 id="docker">Docker</h3>
+<pre class="language-bash"><code class="language-bash">docker pull mathtechstudio/ohmyg0sh:latest
+docker run -it --rm -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest -f /work/app-release.apk
+</code></pre>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li><strong>Dart SDK</strong> ^3.5</li>
+<li><strong>Java</strong> 11 or newer (required by <code>jadx</code>)</li>
+<li><strong>jadx</strong> installed and available on <code>PATH</code>, or passed with <code>--jadx</code></li>
+</ul>
+<h3 id="installing-jadx">Installing jadx</h3>
+<pre class="language-bash"><code class="language-bash"># macOS
+brew install jadx
+
+# Linux / Windows
+# Download from https://github.com/skylot/jadx/releases and add the binary to PATH
+</code></pre>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="cli">CLI</h3>
+<pre class="language-bash"><code class="language-bash"># Basic scan
+ohmyg0sh -f app-release.apk
+
+# JSON results
+ohmyg0sh -f app-release.apk --json -o results.json
+
+# Custom patterns &amp; extra jadx flags
+ohmyg0sh -f app-release.apk -p custom/regexes.json -a "--deobf --log-level INFO"
+</code></pre>
+<div class="markdown-alert markdown-alert-tip">
+<p class="markdown-alert-title">Tip</p>
+<p>If your output file name starts with <code>-</code>, provide the path as <code>--output=./-results.json</code> to avoid option parsing issues.</p>
+</div>
+<h3 id="programmatic-api">Programmatic API</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:ohmyg0sh/ohmyg0sh.dart';
+
+Future&lt;void&gt; main() async {
+  final scanner = OhMyG0sh(
+    apkPath: './app-release.apk',
+    outputJson: true,
+    outputFile: 'results.json',
+  );
+
+  await scanner.run();
+}
+</code></pre>
+<h2 id="configuration">Configuration</h2>
+<h3 id="custom-patterns-regexesjson">Custom Patterns (<code>regexes.json</code>)</h3>
+<pre class="language-json"><code class="language-json">// your-fucking-rules.json
+{
+  "Google_API_Key": "AIza[0-9A-Za-z\\-_]{35}",
+  "AWS_Access_Key": "AKIA[0-9A-Z]{16}",
+  "Custom_Token": "myapp_[a-f0-9]{32}"
+  // ...
+}
+</code></pre>
+<p>Use via <code>ohmyg0sh -f app.apk -p my-patterns.json</code>.</p>
+<h3 id="false-positive-filters-notkeyhacksjson">False Positive Filters (<code>notkeyhacks.json</code>)</h3>
+<pre class="language-json"><code class="language-json">{
+  "patterns": ["example\\.com"],
+  "contains": ["PLACEHOLDER"],
+  "Google_API_Key": ["AIzaGRAPHIC_DESIGN"]
+}
+</code></pre>
+<p>Use via <code>ohmyg0sh -f app.apk -n my-filters.json</code>.</p>
+<h2 id="built-in-patterns">Built-in Patterns</h2>
+<p>Bundled rules detect secrets across:</p>
+<ul>
+<li><strong>Cloud</strong>: AWS, Google Cloud, Azure, DigitalOcean</li>
+<li><strong>Social &amp; Comms</strong>: Facebook, Twitter, Slack, Discord</li>
+<li><strong>Payments</strong>: Stripe, PayPal, Square, Braintree</li>
+<li><strong>Developer Services</strong>: GitHub, GitLab, Mailgun, Cloudinary</li>
+<li><strong>Databases &amp; Keys</strong>: MongoDB, Postgres, private key blocks</li>
+</ul>
+<p>Review the full list in <a href="config/regexes.json">config/regexes.json</a>.</p>
+<h2 id="output-examples">Output Examples</h2>
+<h3 id="text">Text</h3>
+<pre class="language-bash"><code class="language-bash">** Scanning against 'com.example.app'
+
+[Google_API_Key]
+- AIzaSyD...
+
+** Results saved into 'results_1234567890.txt'.
+</code></pre>
+<h3 id="json">JSON</h3>
+<pre class="language-json"><code class="language-json">{
+  "package": "com.example.app",
+  "results": [
+    {
+      "name": "Google_API_Key",
+      "matches": ["AIzaSyD..."]
+    }
+  ],
+  "generated_at": "2025-10-07T14:00:00Z",
+  "generated_by": "ohmyg0sh",
+  "repository": "https://github.com/mathtechstudio/ohmyg0sh",
+  "pub_dev": "https://pub.dev/packages/ohmyg0sh"
+}
+</code></pre>
+<h2 id="cli-reference">CLI Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Short</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--file</code></td>
+<td><code>-f</code></td>
+<td>APK file to scan (required)</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td><code>-o</code></td>
+<td>Output file path (auto-generated if missing)</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td></td>
+<td>Emit JSON instead of text</td>
+</tr>
+<tr>
+<td><code>--pattern</code></td>
+<td><code>-p</code></td>
+<td>Custom <code>regexes.json</code> file</td>
+</tr>
+<tr>
+<td><code>--notkeys</code></td>
+<td><code>-n</code></td>
+<td>Custom <code>notkeyhacks.json</code> file</td>
+</tr>
+<tr>
+<td><code>--jadx</code></td>
+<td></td>
+<td>Explicit path to the <code>jadx</code> binary</td>
+</tr>
+<tr>
+<td><code>--args</code></td>
+<td><code>-a</code></td>
+<td>Additional <code>jadx</code> arguments (quoted)</td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td><code>-h</code></td>
+<td>Show usage</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-it-works">How It Works</h2>
+<ol>
+<li><strong>Decompile</strong> APK with <code>jadx</code></li>
+<li><strong>Extract</strong> package metadata</li>
+<li><strong>Scan</strong> Java, Kotlin, Smali, XML, JS, and TXT sources</li>
+<li><strong>Match</strong> regex patterns against file contents</li>
+<li><strong>Filter</strong> via <code>notkeyhacks</code> rules</li>
+<li><strong>Report</strong> grouped matches to disk in the requested format</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="jadx-not-found"><code>jadx</code> Not Found</h3>
+<pre class="language-bash"><code class="language-bash">brew install jadx       # macOS
+which jadx &amp;&amp; jadx --version
+</code></pre>
+<p>Or run with <code>--jadx /custom/path/to/jadx</code>.</p>
+<h3 id="jadx-exits-with-errors"><code>jadx</code> Exits with Errors</h3>
+<p>OhMyG0sh continues when usable artifacts exist and suppresses the noisy <code>ERROR - finished with errors</code> line. For verbose logs use:</p>
+<pre class="language-bash"><code class="language-bash">ohmyg0sh -f app.apk -a "--log-level DEBUG"
+</code></pre>
+<h3 id="custom-pattern-resolution">Custom Pattern Resolution</h3>
+<p>Search order:</p>
+<ol>
+<li><code>--pattern</code> path (if provided)</li>
+<li><code>/app/config/regexes.json</code> (Docker image)</li>
+<li><code>package:ohmyg0sh/config/regexes.json</code> (pub install)</li>
+<li><code>./config/regexes.json</code></li>
+<li>Executable-relative fallback</li>
+</ol>
+<h2 id="docker-usage">Docker Usage</h2>
+<pre class="language-bash"><code class="language-bash">alias ohmyg0sh='docker run --rm -it -v "$PWD":/work -w /work mathtechstudio/ohmyg0sh:latest'
+ohmyg0sh -f app-release.apk
+</code></pre>
+<p>With custom patterns:</p>
+<pre class="language-bash"><code class="language-bash">docker run -it --rm \
+  -v "$PWD":/work \
+  -v "$PWD/patterns.json":/patterns.json \
+  -w /work \
+  mathtechstudio/ohmyg0sh:latest \
+  -f /work/app.apk -p /patterns.json
+</code></pre>
+<h2 id="development">Development</h2>
+<pre class="language-bash"><code class="language-bash">git clone https://github.com/mathtechstudio/ohmyg0sh.git
+cd ohmyg0sh
+dart pub get
+dart run bin/ohmyg0sh.dart -f app-release.apk
+dart test
+</code></pre>
+<h2 id="contributing">Contributing</h2>
+<ol>
+<li>Fork the repository</li>
+<li>Create a feature branch</li>
+<li>Implement and test your changes</li>
+<li>Submit a pull request</li>
+</ol>
+<h2 id="security-notes">Security Notes</h2>
+<ul>
+<li>Use only on APKs you are authorized to assess</li>
+<li>Review findings manually to confirm leaks</li>
+<li>Rotate exposed credentials immediately</li>
+<li>Report vulnerabilities responsibly</li>
+</ul>
+<h2 id="acknowledments">Acknowledments</h2>
+<p>Since this tool includes some contributions, and I'm not an asshole, I'll publically thank the following users for their helps and resources:</p>
+<table>
+<thead>
+<tr>
+<th>Contributors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/mathtechstudio/ohmyg0sh/graphs/contributors"><img src="https://contrib.rocks/image?repo=mathtechstudio/ohmyg0sh" alt="Contributors"></a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="license">License</h2>
+<p>Released under the MIT License - see the <a href="LICENSE">MIT License</a> file for details.</p>
+<hr>
+<h3 align="center" <="" h3="">
+<ul>
+<li><a href="https://github.com/mathtechstudio/ohmyg0sh">GitHub</a></li>
+<li><a href="https://hub.docker.com/r/mathtechstudio/ohmyg0sh">Docker</a></li>
+<li><a href="https://github.com/mathtechstudio/ohmyg0sh/issues">Issue Tracker</a></li>
+<li><a href="https://pub.dev/packages/ohmyg0sh">pub.dev Package</a></li>
+</ul>
+</h3>
+</section>
+
+
+      <section class="summary">
+          <h2>Libraries</h2>
+        <dl>
+          <dt id="ohmyg0sh">
+  <span class="name"><a href="ohmyg0sh/">ohmyg0sh</a></span> 
+
+</dt>
+<dd>OhMyG0sh — Android APK security scanner.
+</dd>
+
+        </dl>
+      </section>
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="https://github.com/mathtechstudio/ohmyg0sh">ohmyg0sh package</a></li>
+</ol>
+
+    <h5 class="hidden-xs"><span class="package-name">ohmyg0sh</span> <span class="package-kind">package</span></h5>
+    <ol>
+      <li class="section-title">Libraries</li>
+      <li><a href="ohmyg0sh/">ohmyg0sh</a></li>
+</ol>
+
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div>
+</main>
+<footer>
+  <span class="no-break">
+    ohmyg0sh
+      1.70.0
+  </span>
+  
+</footer>
+
+
+<script src="static-assets/highlight.pack.js?v1"></script>
+<script src="static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+
