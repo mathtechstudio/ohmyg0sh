@@ -37,7 +37,7 @@ ${CliColors.header}
  $version
  --${CliColors.reset}
  ${CliColors.bold}APK security scanner file for URIs, endpoints & secrets for detecting hardcoded credentials${CliColors.reset}
- ${CliColors.green}(c) 2025, Iqbal Fauzi - https://github.com/mathtechstudio/ohmyg0sh${CliColors.reset}
+ ${CliColors.green}(c) 2026, Iqbal Fauzi - https://github.com/mathtechstudio/ohmyg0sh${CliColors.reset}
 ''';
 
   stderr.writeln(banner);
