@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.71.0] - 2026-01-22
+
+### Added
+
+- **Enhanced Error Handling System**
+  - Structured error types: `ApkError`, `JadxError`, `ConfigurationError`, `ScanError`, `PatternError`
+  - Detailed error context with actionable messages
+  - Comprehensive error scenarios documentation ([ERROR_SCENARIOS.md](ERROR_SCENARIOS.md))
+
+- **Performance Optimizations**
+  - Configurable concurrency control via `scanConcurrency` parameter (default: 16)
+  - `Semaphore` class for bounded concurrent operations
+  - Progress reporting with `ScanProgress` class
+  - Efficient memory management for large APKs
+  - Streaming file reading for large files
+
+- **Modern Dart Features**
+  - Enhanced enums: `ScanStatus`, `OutputFormat`
+  - Type-safe data models: `ScanResult`, `ScanStatistics`
+  - Records and pattern matching for cleaner code
+  - Improved type system throughout
+
+- **Code Organization**
+  - `JadxLogHandler` class for log management
+  - `ConfigLoader` utility for configuration file resolution
+  - `FileUtils` utility for file type detection and handling
+  - Modular architecture with clear separation of concerns
+
+### Changed
+
+- **Refactored Core Engine**
+  - Extracted large functions into smaller, focused methods
+  - Improved pattern matching logic organization
+  - Better separation of concerns in scanning workflow
+  - Cleaner decompile method with extracted log handling
+
+- **Configuration Loading**
+  - Centralized configuration file resolution
+  - Consistent error messages across all config operations
+  - Better handling of optional configuration files
+
+- **File Scanning**
+  - Modular file enumeration with BFS approach
+  - Extracted file type checking into utilities
+  - Improved artifact detection logic
+
+### Fixed
+
+- Removed duplicate configuration loading code
+- Eliminated redundant file extension checking
+- Improved error message consistency
+- Fixed unused imports
+
+### Documentation
+
+- Enhanced dartdoc comments for all public APIs
+- Added comprehensive usage examples
+- Created error scenarios guide
+- Updated README with new features
+- Generated API documentation with zero warnings
+
 ## [1.70.0] - 2025-10-08
 
 ### Added
