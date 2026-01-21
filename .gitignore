@@ -6,5 +6,7 @@ app-release.apk
 
 results.json
 
+.kiro/
+
 RELEASE_STEP.md
 lib/src/version.dart
