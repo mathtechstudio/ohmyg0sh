@@ -12,7 +12,7 @@
 /// - JSON or plaintext report output
 ///
 /// Quick CLI usage:
-///   ohmyg0sh -f app.apk [-o results.json] [--json] [-p config/regexes.json]
+///   ohmyg0sh -f app.apk -o results.json --json -p config/regexes.json
 ///
 /// Library usage:
 /// ```dart
@@ -29,9 +29,12 @@
 /// - bin/ohmyg0sh.dart — CLI entrypoint and flags
 /// - lib/src/ohmyg0sh_base.dart — core engine
 /// - lib/src/regex_scanner.dart — standalone regex scanner utility
+/// - lib/src/errors.dart — error types
 /// - config/regexes.json — detection patterns
 /// - config/notkeyhacks.json — optional filters for non-keys
 library;
 
 export 'src/ohmyg0sh_base.dart';
 export 'src/regex_scanner.dart';
+export 'src/errors.dart';
+export 'src/types.dart';

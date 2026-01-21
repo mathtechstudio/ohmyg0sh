@@ -2,23 +2,104 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
-import 'dart:math' as math;
 import 'package:path/path.dart' as p;
 
-/// OhMyG0sh core engine.
+import 'errors.dart';
+import 'concurrency.dart';
+import 'progress.dart';
+import 'jadx_log_handler.dart';
+import 'config_loader.dart';
+import 'file_utils.dart';
+
+/// OhMyG0sh core engine for APK security scanning.
 ///
-/// Decompiles APKs and scans source artifacts for hardcoded secrets and
-/// endpoints. The typical workflow is:
-/// 1) integrityCheck()
-/// 2) decompile()
-/// 3) scanning()
-/// 4) generateReport()
-/// 5) cleanup()
+/// Decompiles Android APK files using JADX and scans the decompiled source
+/// code for hardcoded secrets, API keys, tokens, credentials, and other
+/// potentially sensitive information using configurable regex patterns.
 ///
-/// Instances retain temporary state (e.g., package name and aggregated
-/// results) for the duration of a run. A temporary directory is created per
-/// run and removed by [cleanup].
+/// ## Workflow
+///
+/// The typical scanning workflow consists of five steps:
+/// 1. [integrityCheck] - Validate inputs and environment
+/// 2. [decompile] - Decompile APK using JADX
+/// 3. [scanning] - Scan decompiled files for patterns
+/// 4. [generateReport] - Generate results report
+/// 5. [cleanup] - Remove temporary files
+///
+/// Alternatively, use [run] to execute all steps automatically.
+///
+/// ## Basic Usage
+///
+/// ```dart
+/// import 'package:ohmyg0sh/ohmyg0sh.dart';
+///
+/// // Simple scan with defaults
+/// final scanner = OhMyG0sh(apkPath: 'app-release.apk');
+/// await scanner.run();
+/// ```
+///
+/// ## Advanced Usage
+///
+/// ```dart
+/// // Customized scan with all options
+/// final scanner = OhMyG0sh(
+///   apkPath: 'app-release.apk',
+///   outputJson: true,
+///   outputFile: 'security-report.json',
+///   patternPath: 'custom-patterns.json',
+///   notKeyHacksPath: 'custom-filters.json',
+///   jadxPath: '/usr/local/bin/jadx',
+///   continueOnJadxError: true,
+///   scanConcurrency: 32,
+///   showProgress: true,
+/// );
+///
+/// try {
+///   await scanner.integrityCheck();
+///   print('Pre-flight checks passed');
+///
+///   await scanner.decompile();
+///   print('Decompilation complete');
+///
+///   await scanner.scanning();
+///   print('Scanning complete');
+///
+///   await scanner.generateReport();
+///   print('Report generated');
+/// } catch (e) {
+///   print('Scan failed: $e');
+/// } finally {
+///   await scanner.cleanup();
+/// }
+/// ```
+///
+/// ## Error Handling
+///
+/// The scanner can throw several types of errors:
+/// - [ApkError] - APK file not found or inaccessible
+/// - [JadxError] - JADX not found or decompilation failed
+/// - [ConfigurationError] - Configuration files missing or invalid
+/// - [ScanError] - File scanning errors
+///
+/// ## State Management
+///
+/// Each instance maintains temporary state including:
+/// - Temporary decompilation directory
+/// - Package name extracted from AndroidManifest.xml
+/// - Aggregated scan results
+/// - Loaded pattern and filter configurations
+///
+/// The temporary directory is automatically created during [decompile]
+/// and should be cleaned up with [cleanup] when done.
+///
+/// ## Thread Safety
+///
+/// Instances are NOT thread-safe. Create separate instances for
+/// concurrent scanning of multiple APKs.
+///
+/// See also:
+/// - [RegexScanner] for standalone file scanning without APK decompilation
+/// - [ConfigLoader] for configuration file resolution
 class OhMyG0sh {
   final String apkPath;
   final bool outputJson;
@@ -28,25 +109,80 @@ class OhMyG0sh {
   final String? jadxPath;
   final bool continueOnJadxError;
   final int scanConcurrency;
+  final bool showProgress;
   late final Directory _tmpDir;
   final Map<String, Set<String>> _results = {};
   String? _packageName;
   Map<String, dynamic>? _patterns;
   Map<String, dynamic>? _notkeyhacks;
 
-  /// Create a new scanner instance.
+  /// Creates a new APK scanner instance.
   ///
-  /// Required:
-  /// - [apkPath] Path to the target APK to analyze.
+  /// ## Required Parameters
   ///
-  /// Optional:
-  /// - [outputJson] Write report as JSON (default: true). When false, writes plaintext.
-  /// - [outputFile] Destination report path. If null, a default name is used.
-  /// - [patternPath] Path to regex patterns JSON. If null, default resolution is used.
-  /// - [notKeyHacksPath] Path to optional filters JSON to reduce false positives.
-  /// - [jadxPath] Path to JADX binary. If null, resolves via PATH.
-  /// - [continueOnJadxError] Continue scanning when JADX exits non-zero but artifacts exist (default: true).
-  /// - [scanConcurrency] Maximum concurrent file scans (default: 32).
+  /// - [apkPath] - Path to the target APK file to analyze. Must exist and be readable.
+  ///
+  /// ## Optional Parameters
+  ///
+  /// - [outputJson] - Output format (default: `true`).
+  ///   - `true`: JSON format with structured data
+  ///   - `false`: Plain text format with human-readable output
+  ///
+  /// - [outputFile] - Destination path for the report (default: auto-generated).
+  ///   - If `null`, generates `results.json` or `results.txt` based on [outputJson]
+  ///   - Can be absolute or relative path
+  ///
+  /// - [patternPath] - Path to custom regex patterns JSON file (default: auto-resolved).
+  ///   - If `null`, searches standard locations (see [ConfigLoader])
+  ///   - Must be valid JSON with pattern definitions
+  ///
+  /// - [notKeyHacksPath] - Path to false-positive filter JSON (default: auto-resolved).
+  ///   - Optional file to reduce false positives
+  ///   - If not found, no filtering is applied
+  ///
+  /// - [jadxPath] - Path to JADX binary (default: resolved from PATH).
+  ///   - If `null`, searches system PATH for `jadx` command
+  ///   - Must be executable JADX binary
+  ///
+  /// - [continueOnJadxError] - Continue on JADX errors (default: `true`).
+  ///   - `true`: Continue if usable artifacts exist despite JADX errors
+  ///   - `false`: Fail immediately on any JADX error
+  ///
+  /// - [scanConcurrency] - Maximum concurrent file scans (default: `16`).
+  ///   - Controls parallelism to prevent "too many open files" errors
+  ///   - Valid range: 1-256
+  ///   - Higher values = faster but more resource usage
+  ///
+  /// - [showProgress] - Display progress during scanning (default: `true`).
+  ///   - `true`: Show progress updates on stderr
+  ///   - `false`: Silent mode (useful for CI/CD)
+  ///
+  /// ## Examples
+  ///
+  /// ```dart
+  /// // Minimal configuration
+  /// final scanner = OhMyG0sh(apkPath: 'app.apk');
+  ///
+  /// // Custom output location
+  /// final scanner = OhMyG0sh(
+  ///   apkPath: 'app.apk',
+  ///   outputFile: 'reports/security-scan.json',
+  /// );
+  ///
+  /// // High-performance scanning
+  /// final scanner = OhMyG0sh(
+  ///   apkPath: 'large-app.apk',
+  ///   scanConcurrency: 64,
+  ///   showProgress: true,
+  /// );
+  ///
+  /// // CI/CD mode (silent, fail-fast)
+  /// final scanner = OhMyG0sh(
+  ///   apkPath: 'app.apk',
+  ///   continueOnJadxError: false,
+  ///   showProgress: false,
+  /// );
+  /// ```
   OhMyG0sh({
     required this.apkPath,
     this.outputJson = true,
@@ -56,6 +192,7 @@ class OhMyG0sh {
     this.jadxPath,
     this.continueOnJadxError = true,
     this.scanConcurrency = 16,
+    this.showProgress = true,
   });
 
   /// Create a temporary working directory used for decompilation and scanning.
@@ -69,22 +206,41 @@ class OhMyG0sh {
   /// pattern and filter configurations.
   ///
   /// Throws:
-  /// - [Exception] when the APK or required configuration/binary is missing.
+  /// - [ApkError] when the APK file doesn't exist or is inaccessible
+  /// - [JadxError] when JADX binary is not found
+  /// - [ConfigurationError] when configuration files are missing or invalid
   Future<void> integrityCheck() async {
     final apkFile = File(apkPath);
     if (!apkFile.existsSync()) {
-      throw Exception("APK file doesn't exist: $apkPath");
+      throw ApkError(
+        "APK file doesn't exist or is not accessible",
+        apkPath,
+        'Verify the file path and permissions',
+      );
     }
 
     // check jadx
     if (jadxPath != null) {
       if (!File(jadxPath!).existsSync()) {
-        throw Exception("jadx not found at provided path: $jadxPath");
+        throw JadxError(
+          "jadx not found at provided path",
+          -1,
+          false,
+          'Path: $jadxPath\nVerify the jadx binary exists at this location',
+        );
       }
     } else {
       final which = await _which('jadx');
       if (which == null) {
-        throw Exception("jadx binary not found in PATH. Please install jadx.");
+        throw JadxError(
+          "jadx binary not found in PATH",
+          -1,
+          false,
+          'Install jadx using:\n'
+              '  macOS: brew install jadx\n'
+              '  Linux/Windows: https://github.com/skylot/jadx/releases\n'
+              'Or provide explicit path with --jadx option',
+        );
       }
     }
 
@@ -121,65 +277,24 @@ class OhMyG0sh {
   /// - [extraArgs] Extra arguments forwarded to JADX.
   ///
   /// Throws:
-  /// - [Exception] when JADX is not available or decompilation fails without usable artifacts.
+  /// - [JadxError] when JADX is not available or decompilation fails without usable artifacts.
   Future<void> decompile({List<String>? extraArgs}) async {
     await _createTemp();
     final outDir = _tmpDir.path;
     final jadx = jadxPath ?? (await _which('jadx'));
-    if (jadx == null) throw Exception('jadx not found');
+    if (jadx == null) {
+      throw JadxError(
+        'jadx not found',
+        -1,
+        false,
+        'JADX binary could not be located. Install it or provide --jadx path',
+      );
+    }
 
     final args = [jadx, '-d', outDir, apkPath];
     if (extraArgs != null) args.addAll(extraArgs);
 
-    final stdoutBuf = StringBuffer();
-    final stderrBuf = StringBuffer();
-    const errorMarker = 'ERROR - finished with errors';
-    final errorRegex =
-        RegExp(r'ERROR - finished with errors, count: \d+\r?\n?');
-    const carryLength = 64;
-    String stdoutCarry = '';
-    String stderrCarry = '';
-
-    void handleChunk(String data, {required bool isStdout}) {
-      final combined = (isStdout ? stdoutCarry : stderrCarry) + data;
-      final emitLength =
-          combined.length <= carryLength ? 0 : combined.length - carryLength;
-      final emitPortion = combined.substring(0, emitLength);
-      final sanitized = emitPortion.replaceAll(errorRegex, '');
-      if (sanitized.isNotEmpty) {
-        if (isStdout) {
-          stdout.write(sanitized);
-        } else {
-          stderr.write(sanitized);
-        }
-      }
-
-      final newCarry = combined.substring(emitLength);
-      if (isStdout) {
-        stdoutCarry = newCarry;
-      } else {
-        stderrCarry = newCarry;
-      }
-    }
-
-    void flushCarry({required bool isStdout}) {
-      final carry = isStdout ? stdoutCarry : stderrCarry;
-      if (carry.isNotEmpty) {
-        final sanitized = carry.replaceAll(errorRegex, '');
-        if (sanitized.isNotEmpty) {
-          if (isStdout) {
-            stdout.write(sanitized);
-          } else {
-            stderr.write(sanitized);
-          }
-        }
-      }
-      if (isStdout) {
-        stdoutCarry = '';
-      } else {
-        stderrCarry = '';
-      }
-    }
+    final logHandler = JadxLogHandler();
 
     final proc = await Process.start(
       args.first,
@@ -188,70 +303,20 @@ class OhMyG0sh {
       mode: ProcessStartMode.normal,
     );
 
-    proc.stdout.transform(utf8.decoder).listen((data) {
-      stdoutBuf.write(data);
-      handleChunk(data, isStdout: true);
-    });
-    proc.stderr.transform(utf8.decoder).listen((data) {
-      stderrBuf.write(data);
-      handleChunk(data, isStdout: false);
-    });
+    proc.stdout.transform(utf8.decoder).listen(logHandler.handleStdout);
+    proc.stderr.transform(utf8.decoder).listen(logHandler.handleStderr);
 
     final exitCode = await proc.exitCode;
-    flushCarry(isStdout: true);
-    flushCarry(isStdout: false);
+    logHandler.flushAll();
 
-    final sawFinishedErrorsLine = continueOnJadxError &&
-        (stdoutBuf.toString().contains(errorMarker) ||
-            stderrBuf.toString().contains(errorMarker));
+    final sawFinishedErrorsLine =
+        continueOnJadxError && logHandler.containsErrorMarker();
 
     // Persist logs for troubleshooting
-    try {
-      await File(p.join(outDir, 'jadx_stdout.log'))
-          .writeAsString(stdoutBuf.toString());
-      await File(p.join(outDir, 'jadx_stderr.log'))
-          .writeAsString(stderrBuf.toString());
-      await File(p.join(outDir, 'jadx_exit_code.txt'))
-          .writeAsString('$exitCode');
-    } catch (_) {}
+    await logHandler.persistLogs(outDir, exitCode);
 
     if (exitCode != 0) {
-      // detect if usable decompiled artifacts exist (lenient)
-      bool hasArtifacts = false;
-      try {
-        final dir = Directory(outDir);
-        if (dir.existsSync()) {
-          bool foundNonLogFile = false;
-          bool foundKnownExt = false;
-          bool foundSourcesOrResourcesDir = false;
-
-          await for (final entity
-              in dir.list(recursive: true, followLinks: false)) {
-            if (entity is Directory) {
-              final base = p.basename(entity.path).toLowerCase();
-              if (base == 'sources' || base == 'resources') {
-                foundSourcesOrResourcesDir = true;
-              }
-            } else if (entity is File) {
-              final base = p.basename(entity.path).toLowerCase();
-              if (base == 'jadx_stdout.log' ||
-                  base == 'jadx_stderr.log' ||
-                  base == 'jadx_exit_code.txt') {
-                continue;
-              }
-              foundNonLogFile = true;
-              final ext = p.extension(entity.path).toLowerCase();
-              if (['.java', '.xml', '.smali', '.kt', '.txt', '.js']
-                  .contains(ext)) {
-                foundKnownExt = true;
-              }
-            }
-          }
-
-          hasArtifacts =
-              foundKnownExt || foundSourcesOrResourcesDir || foundNonLogFile;
-        }
-      } catch (_) {}
+      final hasArtifacts = await _detectJadxArtifacts(outDir);
 
       if (continueOnJadxError && hasArtifacts) {
         final prefix = sawFinishedErrorsLine
@@ -261,121 +326,78 @@ class OhMyG0sh {
             'Warning: $prefix Continuing because usable artifacts were produced in $outDir. See logs: $outDir/jadx_stdout.log, $outDir/jadx_stderr.log');
         return;
       }
-      throw Exception(
-          'jadx failed with exit code $exitCode. See logs in $outDir/jadx_stdout.log and $outDir/jadx_stderr.log');
+      throw JadxError(
+        'jadx decompilation failed',
+        exitCode,
+        false,
+        'JADX exited with code $exitCode. Check logs:\n'
+            '  stdout: $outDir/jadx_stdout.log\n'
+            '  stderr: $outDir/jadx_stderr.log\n'
+            'Try running with --args "--log-level DEBUG" for more details',
+      );
+    }
+  }
+
+  /// Detect if usable decompiled artifacts exist in the output directory.
+  ///
+  /// Returns true if the directory contains recognizable source files or
+  /// standard JADX output directories (sources, resources).
+  Future<bool> _detectJadxArtifacts(String outDir) async {
+    try {
+      final dir = Directory(outDir);
+      if (!dir.existsSync()) return false;
+
+      bool foundNonLogFile = false;
+      bool foundKnownExt = false;
+      bool foundSourcesOrResourcesDir = false;
+
+      await for (final entity
+          in dir.list(recursive: true, followLinks: false)) {
+        if (entity is Directory) {
+          if (FileUtils.isJadxOutputDir(entity)) {
+            foundSourcesOrResourcesDir = true;
+          }
+        } else if (entity is File) {
+          if (FileUtils.isLogFile(entity)) {
+            continue;
+          }
+          foundNonLogFile = true;
+          if (FileUtils.isScannablePath(entity.path)) {
+            foundKnownExt = true;
+          }
+        }
+      }
+
+      return foundKnownExt || foundSourcesOrResourcesDir || foundNonLogFile;
+    } catch (_) {
+      return false;
     }
   }
 
   /// Load detection patterns from JSON.
   ///
-  /// Resolution order when [patternPath] is null:
-  /// 1) /app/config/regexes.json (Docker)
-  /// 2) ./config/regexes.json (current directory)
-  /// 3) script-relative ../../config/regexes.json
+  /// Uses ConfigLoader to resolve patterns from standard locations.
   ///
   /// Throws:
-  /// - [Exception] if none of the candidates exist.
+  /// - [ConfigurationError] if the pattern file is not found or contains invalid JSON.
   Future<Map<String, dynamic>> _loadPatterns() async {
-    if (patternPath != null) {
-      final f = File(patternPath!);
-      if (!f.existsSync()) {
-        throw Exception('Pattern file not found: $patternPath');
-      }
-      return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-    }
-
-    // Resolution order:
-    // 1) /app/config/regexes.json (Docker)
-    // 2) ./config/regexes.json (current directory)
-    // 3) package:ohmyg0sh/config/regexes.json (pub global / package install)
-    // 4) script-relative ../../config/regexes.json
-    final candidates = <String>[
-      '/app/config/regexes.json',
-      p.join(Directory.current.path, 'config', 'regexes.json'),
-    ];
-
-    // Try package: URI resolution (works for pub global and direct runs)
-    try {
-      final pkgUri = await Isolate.resolvePackageUri(
-        Uri.parse('package:ohmyg0sh/config/regexes.json'),
-      );
-      if (pkgUri != null && pkgUri.scheme == 'file') {
-        candidates.add(p.normalize(pkgUri.toFilePath()));
-      }
-    } catch (_) {}
-
-    // Try script-relative path
-    try {
-      final scriptDir = File(Platform.script.toFilePath()).parent;
-      candidates.add(
-        p.normalize(
-            p.join(scriptDir.path, '..', '..', 'config', 'regexes.json')),
-      );
-    } catch (_) {}
-
-    for (final candidate in candidates) {
-      final f = File(candidate);
-      if (f.existsSync()) {
-        return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-      }
-    }
-
-    throw Exception(
-      'regexes.json not found. Provide patternPath or ensure config/regexes.json exists.\n'
-      'Searched paths: ${candidates.join(", ")}',
+    return ConfigLoader.loadConfig(
+      'regexes.json',
+      explicitPath: patternPath,
+      required: true,
     );
   }
 
   /// Load optional false-positive filters ('notkeyhacks').
   ///
-  /// Returns an empty map when the file is missing. Resolution order mirrors
-  /// patterns: Docker path, current dir, and script-relative.
+  /// Returns an empty map when the file is missing.
+  /// Uses ConfigLoader to resolve from standard locations.
   Future<Map<String, dynamic>> _loadNotKeyHacks() async {
-    if (notKeyHacksPath != null) {
-      final f = File(notKeyHacksPath!);
-      if (f.existsSync()) {
-        return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-      }
-      return {};
-    }
-
-    // Resolution order mirrors patterns:
-    // 1) /app/config/notkeyhacks.json (Docker)
-    // 2) ./config/notkeyhacks.json (current directory)
-    // 3) package:ohmyg0sh/config/notkeyhacks.json (pub global / package install)
-    // 4) script-relative ../../config/notkeyhacks.json
-    final candidates = <String>[
-      '/app/config/notkeyhacks.json',
-      p.join(Directory.current.path, 'config', 'notkeyhacks.json'),
-    ];
-
-    // Try package: URI resolution
-    try {
-      final pkgUri = await Isolate.resolvePackageUri(
-        Uri.parse('package:ohmyg0sh/config/notkeyhacks.json'),
-      );
-      if (pkgUri != null && pkgUri.scheme == 'file') {
-        candidates.add(p.normalize(pkgUri.toFilePath()));
-      }
-    } catch (_) {}
-
-    // Try script-relative path
-    try {
-      final scriptDir = File(Platform.script.toFilePath()).parent;
-      candidates.add(
-        p.normalize(
-            p.join(scriptDir.path, '..', '..', 'config', 'notkeyhacks.json')),
-      );
-    } catch (_) {}
-
-    for (final candidate in candidates) {
-      final f = File(candidate);
-      if (f.existsSync()) {
-        return jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-      }
-    }
-
-    return {}; // Return empty if not found (optional filter)
+    return ConfigLoader.loadConfig(
+      'notkeyhacks.json',
+      explicitPath: notKeyHacksPath,
+      required: false,
+    );
   }
 
   /// Parse AndroidManifest.xml from the JADX output to establish package name.
@@ -398,16 +420,34 @@ class OhMyG0sh {
   /// Walks the temp output directory and concurrently scans files with relevant
   /// extensions (.java, .kt, .xml, .smali, .js, .txt). Populates [_results].
   /// Prints target package if identified.
+  ///
+  /// Throws:
+  /// - [ScanError] if critical scanning errors occur
   Future<void> scanning() async {
     await _readPackageName();
     if (_packageName != null) {
       print("Scanning against '${_packageName!}'");
     }
-    if (_patterns == null) throw Exception('Patterns not loaded');
+    if (_patterns == null) {
+      throw ConfigurationError(
+        'Patterns not loaded',
+        'regexes.json',
+        'Call integrityCheck() before scanning()',
+      );
+    }
 
-    // Enumerate files with BFS and non-recursive listing to avoid FD pressure
+    final files = await _enumerateScanFiles();
+    await _scanFilesWithConcurrency(files);
+  }
+
+  /// Enumerate all scannable files in the temp directory.
+  ///
+  /// Uses breadth-first search with non-recursive listing to avoid
+  /// file descriptor pressure. Returns files with relevant extensions.
+  Future<List<File>> _enumerateScanFiles() async {
     final files = <File>[];
     final dirs = <Directory>[Directory(_tmpDir.path)];
+
     while (dirs.isNotEmpty) {
       final dir = dirs.removeLast();
       try {
@@ -416,9 +456,7 @@ class OhMyG0sh {
           if (entity is Directory) {
             dirs.add(entity);
           } else if (entity is File) {
-            final ext = p.extension(entity.path).toLowerCase();
-            if (['.java', '.xml', '.smali', '.kt', '.txt', '.js']
-                .contains(ext)) {
+            if (_isScannable(entity)) {
               files.add(entity);
             }
           }
@@ -428,13 +466,36 @@ class OhMyG0sh {
       }
     }
 
-    // Scan with bounded concurrency to avoid "Too many open files"
+    return files;
+  }
+
+  /// Check if a file should be scanned based on its extension.
+  bool _isScannable(File file) {
+    return FileUtils.isScannable(file);
+  }
+
+  /// Scan files with bounded concurrency using a semaphore.
+  ///
+  /// Processes files in parallel up to [scanConcurrency] limit and
+  /// displays progress if enabled.
+  Future<void> _scanFilesWithConcurrency(List<File> files) async {
     final int concurrency = scanConcurrency <= 0 ? 16 : scanConcurrency;
-    for (int i = 0; i < files.length; i += concurrency) {
-      final end = math.min(i + concurrency, files.length);
-      final slice = files.sublist(i, end);
-      await Future.wait(slice.map((f) => _scanFile(f, _patterns!)));
-    }
+    final semaphore = Semaphore(concurrency);
+
+    // Initialize progress tracking
+    final progress = ScanProgress(
+      totalFiles: files.length,
+      enabled: showProgress,
+    );
+
+    await Future.wait(
+      files.map((f) => semaphore.execute(() async {
+            await _scanFile(f, _patterns!);
+            progress.increment();
+          })),
+    );
+
+    progress.complete();
   }
 
   /// Scan a single file's content using the loaded [patterns].
@@ -448,6 +509,14 @@ class OhMyG0sh {
       return;
     }
 
+    _scanContentWithPatterns(content, patterns);
+  }
+
+  /// Scan content against all patterns and aggregate results.
+  ///
+  /// Iterates through all patterns and applies them to the content,
+  /// handling both single patterns and pattern arrays.
+  void _scanContentWithPatterns(String content, Map<String, dynamic> patterns) {
     patterns.forEach((name, ptn) {
       if (ptn is List) {
         for (final p in ptn) {
@@ -463,11 +532,32 @@ class OhMyG0sh {
   ///
   /// Attempts compilation with multi-line and dot-all first, then falls back.
   /// Adds unique matches to [_results] unless excluded by [_isFiltered].
+  /// Logs warnings for patterns that fail to compile.
   void _applyPattern(String name, String patternString, String content) {
+    final re = _compilePattern(patternString);
+    if (re == null) {
+      stderr.writeln(
+          'Warning: Failed to compile pattern "$name": $patternString');
+      return;
+    }
+
+    _extractMatches(name, re, content);
+  }
+
+  /// Compile a regex pattern with fallback strategies.
+  ///
+  /// Tries multiple compilation strategies in order:
+  /// 1. multiLine + caseSensitive
+  /// 2. multiLine + dotAll
+  /// 3. caseSensitive only
+  /// 4. dotAll only
+  ///
+  /// Returns null if all strategies fail.
+  RegExp? _compilePattern(String patternString) {
     RegExp? tryCompile({bool multiLine = true, bool dotAll = false}) {
       try {
         return RegExp(patternString, multiLine: multiLine, dotAll: dotAll);
-      } catch (_) {
+      } catch (e) {
         return null;
       }
     }
@@ -476,16 +566,25 @@ class OhMyG0sh {
     re ??= tryCompile(dotAll: true);
     re ??= tryCompile(multiLine: false);
     re ??= tryCompile(multiLine: false, dotAll: true);
-    if (re == null) {
-      return;
-    }
 
-    for (final m in re.allMatches(content)) {
-      final matchStr = m.group(0) ?? '';
-      if (matchStr.isEmpty) continue;
-      if (!_isFiltered(name, matchStr, content)) {
-        _results.putIfAbsent(name, () => <String>{}).add(matchStr);
+    return re;
+  }
+
+  /// Extract matches from content using a compiled regex.
+  ///
+  /// Filters matches using [_isFiltered] and adds unique matches
+  /// to [_results]. Logs errors but continues processing.
+  void _extractMatches(String name, RegExp regex, String content) {
+    try {
+      for (final m in regex.allMatches(content)) {
+        final matchStr = m.group(0) ?? '';
+        if (matchStr.isEmpty) continue;
+        if (!_isFiltered(name, matchStr, content)) {
+          _results.putIfAbsent(name, () => <String>{}).add(matchStr);
+        }
       }
+    } catch (e) {
+      stderr.writeln('Warning: Error applying pattern "$name": $e');
     }
   }
 
@@ -498,50 +597,58 @@ class OhMyG0sh {
   bool _isFiltered(String name, String matchStr, String fileContent) {
     if (_notkeyhacks == null || _notkeyhacks!.isEmpty) return false;
 
-    // common patterns in notkeyhacks: specific regexes or substrings to ignore
-    // support two keys: "patterns" (list of regex) and "contains" (list of substrings)
-    bool matchesRegex(dynamic value) {
-      if (value is List) {
-        for (final item in value) {
-          if (matchesRegex(item)) return true;
-        }
-        return false;
-      }
-      if (value is String) {
-        try {
-          final re = RegExp(value, multiLine: true);
-          if (re.hasMatch(matchStr) || re.hasMatch(fileContent)) return true;
-        } catch (_) {}
-      }
-      return false;
-    }
-
-    bool containsSubstring(dynamic value) {
-      if (value is List) {
-        for (final item in value) {
-          if (containsSubstring(item)) return true;
-        }
-        return false;
-      }
-      if (value is String) {
-        final sub = value;
-        if (matchStr.contains(sub) || fileContent.contains(sub)) return true;
-      }
-      return false;
-    }
-
     try {
       if (_notkeyhacks!.containsKey('patterns')) {
-        if (matchesRegex(_notkeyhacks!['patterns'])) return true;
+        if (_matchesFilterRegex(
+            _notkeyhacks!['patterns'], matchStr, fileContent)) {
+          return true;
+        }
       }
       if (_notkeyhacks!.containsKey('contains')) {
-        if (containsSubstring(_notkeyhacks!['contains'])) return true;
+        if (_containsFilterSubstring(
+            _notkeyhacks!['contains'], matchStr, fileContent)) {
+          return true;
+        }
       }
       if (_notkeyhacks!.containsKey(name)) {
-        if (matchesRegex(_notkeyhacks![name])) return true;
+        if (_matchesFilterRegex(_notkeyhacks![name], matchStr, fileContent)) {
+          return true;
+        }
       }
     } catch (_) {}
 
+    return false;
+  }
+
+  /// Check if match or content matches any filter regex patterns.
+  bool _matchesFilterRegex(dynamic value, String matchStr, String fileContent) {
+    if (value is List) {
+      for (final item in value) {
+        if (_matchesFilterRegex(item, matchStr, fileContent)) return true;
+      }
+      return false;
+    }
+    if (value is String) {
+      try {
+        final re = RegExp(value, multiLine: true);
+        if (re.hasMatch(matchStr) || re.hasMatch(fileContent)) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  /// Check if match or content contains any filter substrings.
+  bool _containsFilterSubstring(
+      dynamic value, String matchStr, String fileContent) {
+    if (value is List) {
+      for (final item in value) {
+        if (_containsFilterSubstring(item, matchStr, fileContent)) return true;
+      }
+      return false;
+    }
+    if (value is String) {
+      if (matchStr.contains(value) || fileContent.contains(value)) return true;
+    }
     return false;
   }
 
@@ -621,17 +728,77 @@ class OhMyG0sh {
     } catch (_) {}
   }
 
-  /// Execute the full scan workflow.
+  /// Executes the complete APK security scan workflow.
   ///
-  /// Orchestrates integrity checks, decompilation, scanning, console summary,
-  /// and report generation. Ensures temporary resources are cleaned up even
-  /// on failure.
+  /// This is the main entry point that orchestrates all scanning steps:
+  /// 1. Validates inputs and environment ([integrityCheck])
+  /// 2. Decompiles the APK using JADX ([decompile])
+  /// 3. Scans decompiled files for patterns ([scanning])
+  /// 4. Prints results summary to console
+  /// 5. Generates report file ([generateReport])
+  /// 6. Cleans up temporary files ([cleanup])
   ///
-  /// Parameters:
-  /// - [jadxExtraArgs] Optional list of extra args passed to JADX.
+  /// The cleanup step runs even if errors occur, ensuring temporary
+  /// files are always removed.
   ///
-  /// Throws:
-  /// - [Exception] if preconditions fail or decompilation cannot proceed.
+  /// ## Parameters
+  ///
+  /// - [jadxExtraArgs] - Optional additional arguments to pass to JADX.
+  ///   Common examples:
+  ///   - `['--log-level', 'DEBUG']` - Enable debug logging
+  ///   - `['--no-res']` - Skip resources decompilation
+  ///   - `['--no-src']` - Skip source decompilation
+  ///
+  /// ## Throws
+  ///
+  /// - [ApkError] - APK file not found or inaccessible
+  /// - [JadxError] - JADX not found or decompilation failed
+  /// - [ConfigurationError] - Configuration files missing or invalid
+  /// - [ScanError] - Critical scanning errors
+  ///
+  /// ## Examples
+  ///
+  /// ```dart
+  /// // Basic scan
+  /// final scanner = OhMyG0sh(apkPath: 'app.apk');
+  /// await scanner.run();
+  ///
+  /// // Scan with JADX debug logging
+  /// await scanner.run(jadxExtraArgs: ['--log-level', 'DEBUG']);
+  ///
+  /// // Error handling
+  /// try {
+  ///   await scanner.run();
+  ///   print('Scan completed successfully');
+  /// } on ApkError catch (e) {
+  ///   print('APK error: $e');
+  /// } on JadxError catch (e) {
+  ///   print('JADX error: $e');
+  /// } on ConfigurationError catch (e) {
+  ///   print('Configuration error: $e');
+  /// } catch (e) {
+  ///   print('Unexpected error: $e');
+  /// }
+  /// ```
+  ///
+  /// ## Output
+  ///
+  /// The method produces two types of output:
+  /// 1. Console output (stdout/stderr):
+  ///    - Progress messages
+  ///    - JADX decompilation logs
+  ///    - Scan progress (if [showProgress] is true)
+  ///    - Results summary grouped by pattern
+  /// 2. Report file:
+  ///    - JSON or text format based on [outputJson]
+  ///    - Contains all matches organized by pattern
+  ///    - Includes metadata (package name, timestamp)
+  ///
+  /// See also:
+  /// - [integrityCheck] for pre-flight validation
+  /// - [decompile] for APK decompilation
+  /// - [scanning] for file scanning
+  /// - [generateReport] for report generation
   Future<void> run({List<String>? jadxExtraArgs}) async {
     try {
       await integrityCheck();

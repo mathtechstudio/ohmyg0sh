@@ -12,6 +12,7 @@ ohmyg0sh is an APK security scanner that decompiles packages with `jadx`, applie
 - [ohmyg0sh](#ohmyg0sh)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
+    - [Recent Improvements (v1.71.0)](#recent-improvements-v1710)
   - [Installation](#installation)
     - [Global CLI (Recommended)](#global-cli-recommended)
     - [Project Dependency](#project-dependency)
@@ -40,7 +41,6 @@ ohmyg0sh is an APK security scanner that decompiles packages with `jadx`, applie
   - [Security Notes](#security-notes)
   - [Acknowledments](#acknowledments)
   - [License](#license)
-  - [Links](#links)
 
 ## Features
 
@@ -51,12 +51,23 @@ ohmyg0sh is an APK security scanner that decompiles packages with `jadx`, applie
 - Streamed CLI updates with noisy jadx error lines suppressed
 - Programmatic API and Docker image for automation pipelines
 
+### Recent Improvements (v1.71.0)
+
+- Structured error types (`ApkError`, `JadxError`, `ConfigurationError`, `ScanError`)
+- Configurable concurrency control (default: 16, adjustable via `scanConcurrency`)
+- Progress reporting for long-running scans
+- Enhanced enums and type-safe data models
+- Modular architecture with utility classes
+- Comprehensive API documentation with usage examples
+
 ## Installation
 
 ### Global CLI (Recommended)
 
 ```bash
 dart pub global activate ohmyg0sh
+
+# then
 ohmyg0sh -f app-release.apk
 ```
 
@@ -127,6 +138,38 @@ Future<void> main() async {
   await scanner.run();
 }
 ```
+
+**Advanced Usage with Error Handling:**
+
+```dart
+import 'package:ohmyg0sh/ohmyg0sh.dart';
+
+Future<void> main() async {
+  final scanner = OhMyG0sh(
+    apkPath: './app-release.apk',
+    outputJson: true,
+    outputFile: 'results.json',
+    scanConcurrency: 32,        // Adjust for performance
+    showProgress: true,          // Display progress
+    continueOnJadxError: true,  // Continue on partial failures
+  );
+
+  try {
+    await scanner.run();
+    print('✓ Scan completed successfully');
+  } on ApkError catch (e) {
+    print('❌ APK Error: ${e.message}');
+  } on JadxError catch (e) {
+    print('❌ JADX Error: ${e.message}');
+  } on ConfigurationError catch (e) {
+    print('❌ Configuration Error: ${e.message}');
+  } catch (e) {
+    print('❌ Unexpected Error: $e');
+  }
+}
+```
+
+For detailed error scenarios and solutions, see [ERROR_SCENARIOS.md](ERROR_SCENARIOS.md).
 
 ## Configuration
 
@@ -304,13 +347,6 @@ Since this tool includes some contributions, and I'm not an asshole, I'll public
 
 Released under the MIT License - see the [MIT License](LICENSE) file for details.
 
-## Links
+---
 
-<h1 align="center" </h1>
-
-- [GitHub](https://github.com/mathtechstudio/ohmyg0sh)
-- [Docker](https://hub.docker.com/r/mathtechstudio/ohmyg0sh)
-- [Issue Tracker](https://github.com/mathtechstudio/ohmyg0sh/issues)
-- [pub.dev Package](https://pub.dev/packages/ohmyg0sh)
-
-</div>
+[Star on GitHub](https://github.com/mathtechstudio/ohmyg0sh) | [View on pub.dev](https://pub.dev/packages/ohmyg0sh) | [Docker](https://hub.docker.com/r/mathtechstudio/ohmyg0sh) | [Report Issues](https://github.com/mathtechstudio/darturbation/issues)
